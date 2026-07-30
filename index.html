@@ -41,10 +41,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sidebar-section{padding:12px 16px 4px;font-size:11px;color:#666;text-transform:uppercase}
 .sidebar-item{display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:14px;color:var(--text);cursor:pointer;transition:background .15s}
 .sidebar-item:active{background:rgba(255,255,255,.05)}
-.settings-sidebar{position:fixed;top:0;right:0;bottom:0;width:75%;max-width:280px;background:var(--card);z-index:150;transform:translateX(100%);transition:transform .3s ease;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 0 16px}
-.settings-sidebar.open{transform:translateX(0)}
-.settings-sidebar-header{padding:20px 16px 12px;text-align:center;border-bottom:1px solid rgba(255,255,255,.08)}
-.settings-sidebar-header .ssh-title{font-size:16px;font-weight:600;color:var(--pink);margin-top:8px}
 #messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch;background:var(--bg);position:relative;z-index:5}
 .msg{max-width:82%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.6;word-break:break-word;animation:fadeIn .3s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
@@ -283,7 +279,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <body>
 
 <div class="header">
-  <div class="avatar" onclick="toggleSettingsSidebar()"><img id="header-avatar-img" src="https://zhile-web-1460393151.cos.ap-guangzhou.myqcloud.com/avatar/zhile_pixel.png?v=1" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>
+  <div class="avatar" onclick="toggleSidebar()"><img id="header-avatar-img" src="https://zhile-web-1460393151.cos.ap-guangzhou.myqcloud.com/avatar/zhile_pixel.png?v=1" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>
   <div class="header-info" onclick="toggleSidebar()" style="cursor:pointer">
     <div class="header-name">知乐</div>
     <div class="header-status" id="status">在线</div>
@@ -300,36 +296,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
-<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
-<div class="sidebar-overlay" id="settings-sidebar-overlay" onclick="toggleSettingsSidebar()"></div>
-<div class="settings-sidebar" id="settings-sidebar">
-  <div class="settings-sidebar-header">
-    <div class="sidebar-avatar"><img src="https://zhile-web-1460393151.cos.ap-guangzhou.myqcloud.com/avatar/zhile_pixel.png?v=1" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>
-    <div class="ssh-title">⚙️ 设置</div>
-  </div>
-  <div class="sidebar-section">系统</div>
-  <div class="sidebar-item" onclick="toggleSettingsSidebar();toggleSettings()">
-    <span>⚙️</span><span>API与外观设置</span>
-  </div>
-  <div class="sidebar-item" onclick="toggleSettingsSidebar();toggleLive2d()">
-    <span>🎭</span><span>立绘开关</span>
-  </div>
-  <div class="sidebar-section">数据</div>
-  <div class="sidebar-item" onclick="toggleSettingsSidebar();exportData()">
-    <span>📤</span><span>导出数据</span>
-  </div>
-  <div class="sidebar-item" onclick="toggleSettingsSidebar();document.getElementById('import-file').click()">
-    <span>📥</span><span>导入数据</span>
-  </div>
-  <div class="sidebar-section">帮助</div>
-  <div class="sidebar-item" onclick="toggleSettingsSidebar();showGuide()">
-    <span>📖</span><span>新手引导</span>
-  </div>
-  <div class="sidebar-item" onclick="toggleSettingsSidebar();toggleAboutPanel()">
-    <span>ℹ️</span><span>关于</span>
-  </div>
-</div>
-<div class="sidebar" id="sidebar">
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div><div class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <div class="sidebar-avatar"><img src="https://zhile-web-1460393151.cos.ap-guangzhou.myqcloud.com/avatar/zhile_pixel.png?v=1" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>
     <div class="sidebar-name">知乐</div>
@@ -373,6 +340,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="sidebar-item" onclick="toggleSidebar();exportCurrentChat()">
     <span>💬</span><span>导出聊天</span>
+  </div>
+  <div class="sidebar-section">设置</div>
+  <div class="sidebar-item" onclick="toggleSidebar();toggleSettings()">
+    <span>⚙️</span><span>API与外观设置</span>
+  </div>
+  <div class="sidebar-item" onclick="toggleSidebar();toggleLive2d()">
+    <span>🎭</span><span>立绘开关</span>
+  </div>
+  <div class="sidebar-item" onclick="toggleSidebar();exportData()">
+    <span>📤</span><span>导出数据</span>
+  </div>
+  <div class="sidebar-item" onclick="toggleSidebar();document.getElementById('import-file').click()">
+    <span>📥</span><span>导入数据</span>
+  </div>
+  <div class="sidebar-item" onclick="toggleSidebar();showGuide()">
+    <span>📖</span><span>新手引导</span>
+  </div>
+  <div class="sidebar-item" onclick="toggleSidebar();toggleAboutPanel()">
+    <span>ℹ️</span><span>关于</span>
   </div>
 
 </div>
@@ -490,7 +476,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
     <h3 style="color:var(--pink)">🌐 朋友圈</h3>
     <div style="display:flex;gap:6px">
-      <button class="btn btn-secondary" id="moments-refresh-btn" onclick="checkMomentsGeneration()" style="padding:4px 10px;font-size:12px">🔄 刷新</button>
+      <button class="btn btn-secondary" id="moments-refresh-btn" onclick="renderMoments()" style="padding:4px 10px;font-size:12px">🔄 刷新</button>
       <button class="btn btn-secondary" onclick="toggleMomentsPanel()" style="padding:4px 10px;font-size:12px">关闭</button>
     </div>
   </div>
@@ -3124,15 +3110,6 @@ function toggleSidebar() {
   }
 }
 
-function toggleSettingsSidebar() {
-  const sb = document.getElementById('settings-sidebar');
-  const ov = document.getElementById('settings-sidebar-overlay');
-  const hd = document.querySelector('.header');
-  const isOpen = sb.classList.toggle('open');
-  ov.classList.toggle('show', isOpen);
-  if(hd) hd.style.visibility = isOpen ? 'hidden' : '';
-}
-
 function toggleLive2d() {
   const wrap = document.getElementById('live2d-wrap');
   const btn = document.getElementById('live2d-btn');
@@ -3830,7 +3807,6 @@ function toggleMomentsPanel() {
   } else {
     panel.classList.add('open');
     renderMoments();
-    checkMomentsGeneration();
   }
 }
 
