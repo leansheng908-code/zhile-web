@@ -133,6 +133,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .msg-sticker{width:72px;height:72px;border-radius:12px;display:block;object-fit:cover;animation:stickerPop .4s ease}
 .msg-sticker-label{font-size:11px;color:var(--muted);background:var(--card);padding:1px 8px;border-radius:8px;border:1px solid var(--border)}
 @keyframes stickerPop{0%{opacity:0;transform:scale(.5) translateY(8px)}60%{transform:scale(1.1)}100%{opacity:1;transform:scale(1) translateY(0)}}
+.typing-cursor{display:inline-block;width:2px;height:14px;background:var(--pink);margin-left:1px;animation:blink .7s infinite;vertical-align:middle}
+@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+.scroll-bottom-btn{position:fixed;bottom:72px;right:16px;width:40px;height:40px;border-radius:50%;background:var(--card);border:1px solid rgba(255,183,197,.2);color:var(--pink);font-size:18px;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 2px 12px rgba(0,0,0,.4);transition:all .2s}
+.scroll-bottom-btn:active{transform:scale(.85)}
+.copy-toast{position:fixed;bottom:80px;left:50%;background:var(--card);color:var(--pink);padding:8px 20px;border-radius:20px;font-size:12px;border:1px solid rgba(255,183,197,.2);z-index:9999;animation:toastShow 1.5s ease-out forwards;pointer-events:none}
+@keyframes toastShow{0%{opacity:0;transform:translateX(-50%) translateY(10px)}20%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-5px)}}
+.heart-pop{position:fixed;pointer-events:none;font-size:24px;z-index:9999;animation:heartFloat 1.2s ease-out forwards}
+@keyframes heartFloat{0%{opacity:1;transform:scale(.3)}30%{transform:scale(1.2)}100%{opacity:0;transform:scale(1) translateY(-50px)}}
+.msg{position:relative;-webkit-user-select:text;user-select:text;-webkit-touch-callout:none}
 
 </style>
 </head>
@@ -163,6 +172,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <input type="text" id="user-input" placeholder="说点什么..." autocomplete="off">
   <button id="send-btn" onclick="sendMessage()">➤</button>
 </div>
+<div class="scroll-bottom-btn" id="scroll-bottom-btn" onclick="scrollToBottom()">↓</div>
 
 <div class="growth-panel" id="growth-panel">
   <div class="affection-section">
@@ -602,6 +612,7 @@ function init() {
   updateUserIdentity();
   updateAffectionDisplay();
   checkAchievements();
+  document.getElementById('messages').addEventListener('scroll', checkScroll);
   if (messages.length === 0) {
     const greet = getDailyGreeting();
     addZhileMsg(greet, Date.now());
@@ -770,19 +781,86 @@ function addUserMsg(text, ts) {
   const div = document.createElement('div');
   div.className = 'msg user';
   div.textContent = text;
+  addLongPressCopy(div);
+  addDoubleClickHeart(div);
   document.getElementById('messages').appendChild(div);
   scrollToBottom();
 }
 
-function addZhileMsg(text, ts, emotion) {
+// 长按复制
+function addLongPressCopy(el) {
+  let timer = null, startX = 0, startY = 0;
+  el.addEventListener('touchstart', function(e) {
+    if (e.touches.length !== 1) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    timer = setTimeout(function() {
+      const text = el.innerText || el.textContent;
+      if (text && navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function() {
+          showCopyToast();
+        }).catch(function() {});
+      }
+    }, 600);
+  }, { passive: true });
+  el.addEventListener('touchmove', function(e) {
+    if (!timer) return;
+    const dx = Math.abs(e.touches[0].clientX - startX);
+    const dy = Math.abs(e.touches[0].clientY - startY);
+    if (dx > 10 || dy > 10) { clearTimeout(timer); timer = null; }
+  }, { passive: true });
+  el.addEventListener('touchend', function() { if (timer) { clearTimeout(timer); timer = null; } });
+}
+
+function showCopyToast() {
+  const old = document.querySelector('.copy-toast');
+  if (old) old.remove();
+  const t = document.createElement('div');
+  t.className = 'copy-toast';
+  t.textContent = '已复制';
+  document.body.appendChild(t);
+  setTimeout(function() { t.remove(); }, 1500);
+}
+
+// 双击爱心
+function addDoubleClickHeart(el) {
+  let lastTap = 0;
+  el.addEventListener('touchend', function(e) {
+    const now = Date.now();
+    if (now - lastTap < 350) {
+      const touch = e.changedTouches[0];
+      if (touch) spawnHeart(touch.clientX, touch.clientY);
+      lastTap = 0;
+    } else {
+      lastTap = now;
+    }
+  });
+  el.addEventListener('dblclick', function(e) {
+    spawnHeart(e.clientX, e.clientY);
+  });
+}
+
+function spawnHeart(x, y) {
+  const h = document.createElement('div');
+  h.className = 'heart-pop';
+  h.textContent = '💕';
+  h.style.left = (x - 12) + 'px';
+  h.style.top = (y - 12) + 'px';
+  document.body.appendChild(h);
+  setTimeout(function() { h.remove(); }, 1200);
+}
+
+function addZhileMsg(text, ts, emotion, animate) {
   const t = ts || Date.now();
   maybeAddTimeSep(t);
   const div = document.createElement('div');
   div.className = 'msg zhile';
+  addLongPressCopy(div);
+  addDoubleClickHeart(div);
   
-  // 解析 *动作* 标记，分离动作和台词
   const parts = text.split(/(\*[^*]+\*)/g);
   const hasAction = parts.some(p => p.startsWith('*') && p.endsWith('*') && p.length > 2);
+  const textSpans = [];
   
   if (hasAction) {
     parts.forEach(part => {
@@ -792,32 +870,71 @@ function addZhileMsg(text, ts, emotion) {
         actionDiv.textContent = part.slice(1, -1);
         div.appendChild(actionDiv);
       } else if (part.trim()) {
-        div.appendChild(document.createTextNode(part.trim()));
+        const span = document.createElement('span');
+        div.appendChild(span);
+        textSpans.push({ span, text: part.trim() });
+        if (!animate) span.textContent = part.trim();
       }
     });
   } else {
-    div.textContent = text;
-  }
-  
-  // 贴纸反应（~30%概率）
-  const stickerData = pickSticker(text, emotion);
-  if (stickerData) {
-    const stickerWrap = document.createElement('div');
-    stickerWrap.className = 'msg-sticker-wrap';
-    const img = document.createElement('img');
-    img.className = 'msg-sticker';
-    img.src = stickerData.url;
-    img.loading = 'lazy';
-    stickerWrap.appendChild(img);
-    const label = document.createElement('span');
-    label.className = 'msg-sticker-label';
-    label.textContent = stickerData.label;
-    stickerWrap.appendChild(label);
-    div.appendChild(stickerWrap);
+    const span = document.createElement('span');
+    div.appendChild(span);
+    textSpans.push({ span, text: text });
+    if (!animate) span.textContent = text;
   }
   
   document.getElementById('messages').appendChild(div);
   scrollToBottom();
+  
+  function showSticker() {
+    const stickerData = pickSticker(text, emotion);
+    if (stickerData) {
+      const stickerWrap = document.createElement('div');
+      stickerWrap.className = 'msg-sticker-wrap';
+      const img = document.createElement('img');
+      img.className = 'msg-sticker';
+      img.src = stickerData.url;
+      img.loading = 'lazy';
+      stickerWrap.appendChild(img);
+      const label = document.createElement('span');
+      label.className = 'msg-sticker-label';
+      label.textContent = stickerData.label;
+      stickerWrap.appendChild(label);
+      div.appendChild(stickerWrap);
+      scrollToBottom();
+    }
+  }
+  
+  if (animate && textSpans.some(s => s.text.length > 0)) {
+    const totalChars = textSpans.reduce((s, t) => s + t.text.length, 0);
+    const speed = Math.max(12, Math.min(45, Math.ceil(1800 / Math.max(totalChars, 1))));
+    let spanIdx = 0, charIdx = 0;
+    const cursor = document.createElement('span');
+    cursor.className = 'typing-cursor';
+    div.appendChild(cursor);
+    
+    function typeNext() {
+      if (spanIdx >= textSpans.length) {
+        cursor.remove();
+        showSticker();
+        return;
+      }
+      const cur = textSpans[spanIdx];
+      if (charIdx < cur.text.length) {
+        cur.span.textContent += cur.text[charIdx];
+        charIdx++;
+        scrollToBottom();
+        setTimeout(typeNext, speed);
+      } else {
+        spanIdx++;
+        charIdx = 0;
+        setTimeout(typeNext, speed);
+      }
+    }
+    typeNext();
+  } else {
+    showSticker();
+  }
 }
 
 // 剥离动作标记，只保留台词（供未来TTS使用）
@@ -850,6 +967,15 @@ function hideTyping() {
 function scrollToBottom() {
   const m = document.getElementById('messages');
   setTimeout(() => m.scrollTop = m.scrollHeight, 50);
+}
+
+// 滚动检测
+function checkScroll() {
+  const m = document.getElementById('messages');
+  const btn = document.getElementById('scroll-bottom-btn');
+  if (!btn) return;
+  const isNearBottom = m.scrollHeight - m.scrollTop - m.clientHeight < 100;
+  btn.style.display = isNearBottom ? 'none' : 'flex';
 }
 
 // ============ 发送消息 ============
@@ -914,7 +1040,7 @@ async function sendMessage() {
     const { cleanText, emotion } = parseEmotionTag(rawReply);
     
     hideTyping();
-    addZhileMsg(cleanText, null, emotion);
+    addZhileMsg(cleanText, null, emotion, true);
     messages.push({ role: 'assistant', content: cleanText, ts: Date.now() });
     
     // 记录情绪数据（每条回复都记，用于情绪可视化）
