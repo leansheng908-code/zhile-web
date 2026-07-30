@@ -4098,29 +4098,33 @@ async function sendGroupMessage(){
   container.appendChild(typingDiv);
   container.scrollTop = container.scrollHeight;
   try {
-    var recentMsgs = msgs.slice(-10).map(function(m){
+    var recentMsgs = msgs.slice(-8).map(function(m){
       var name = m.role === 'user' ? '用户' : (m.role === 'zhile' ? '知乐' : (getFriendData(m.role) || {}).name || '?');
       return name + ': ' + m.content;
     }).join('\n');
-    var memberInfo = group.members.map(function(mid){
-      if(mid === 'zhile') return '知乐(猫耳少女)';
+    // 构建角色档案
+    var charProfiles = group.members.map(function(mid){
+      if(mid === 'zhile') return '知乐: 银发猫耳少女，甜糯粘人，爱撒娇，口头禅是"亲爱的"，说话带颜文字和波浪号';
       var f = getFriendData(mid);
-      return f ? f.name : '?';
-    }).join(', ');
-    var dnaText = group.members.map(function(mid){
-      if(mid === 'zhile') return '【知乐】性格: 银发猫耳软萌少女，甜糯粘人，口头禅亲爱的';
-      var f = getFriendData(mid);
-      if(!f || !f.dna) return f ? '【'+f.name+'】无DNA' : '';
+      if(!f) return '';
       var desc = '';
-      try { var d = JSON.parse(f.dna); desc = d.description || d.personality || d.system_prompt || ''; } catch(e) { desc = (f.dna || '').substring(0, 200); }
-      return '【'+f.name+'】' + desc.substring(0, 300);
-    }).join('\n');
+      if(f.dna){
+        try { var d = JSON.parse(f.dna); desc = d.description || d.personality || d.system_prompt || ''; } catch(e) { desc = (f.dna || '').substring(0, 300); }
+      }
+      return f.name + ': ' + (desc.substring(0, 200) || '性格未知，自由发挥');
+    }).filter(function(s){ return s; }).join('\n');
+    var memberNames = group.members.map(function(mid){
+      if(mid === 'zhile') return '知乐';
+      var f = getFriendData(mid);
+      return f ? f.name : '';
+    }).filter(function(s){ return s; }).join('、');
     // 注入隐藏话题
     var today = new Date().toDateString();
     var hiddenTopic = localStorage.getItem('zhile_gc_dailytopic_' + currentGroupId + '_' + today);
-    var topicHint = hiddenTopic ? '\n当前讨论主题（角色自然地围绕此主题展开，不要生硬提及）: ' + hiddenTopic : '';
-    
-    var prompt = '你是一个群聊管理AI。以下是一个群聊场景：\n\n群成员: ' + memberInfo + '\n\n角色设定:\n' + dnaText + '\n\n最近对话:\n' + recentMsgs + topicHint + '\n\n用户刚说了: ' + text + '\n\n请让群里的角色们自然地回复用户这句话。至少让1-2个不同角色回复。\n返回严格的JSON格式(不要加```标记，不要加任何多余字符):\n{"replies":[{"name":"角色名","text":"回复内容"}]}\n注意: name必须与上面列出的群成员名完全一致(如"知乐"、"爱莉希雅")。text是角色的回复内容，要符合角色性格，自然口语化，每条不超过100字。只返回JSON，不要任何其他文字。';
+    var topicHint = hiddenTopic ? '\n【今日话题】' + hiddenTopic + '（角色自然围绕展开，不要生硬提及）' : '';
+    // system message
+    var sysMsg = '你是一个群聊模拟器。群里有这些角色:\n' + charProfiles + topicHint + '\n\n规则:\n1.每次选1-2个角色回复用户最新消息\n2.角色名只能从: ' + memberNames + ' 中选\n3.回复要符合角色性格，口语化，不超过80字\n4.不要重复之前说过的话\n5.只返回JSON: {"replies":[{"name":"角色名","text":"回复内容"}]}';
+    var userMsg = '最近对话:\n' + recentMsgs + '\n\n用户: ' + text + '\n\n请角色们回复。只返回JSON。';
     var settings = JSON.parse(localStorage.getItem('zhile_settings') || '{}');
     var apiKey = settings.apiKey || DEFAULT_API_KEY;
     var apiUrl = settings.apiUrl || API_URL;
@@ -4128,7 +4132,7 @@ async function sendGroupMessage(){
     var response = await fetch(apiUrl, {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + apiKey },
-      body: JSON.stringify({ model: model, messages: [{ role:'user', content: prompt }], temperature: 0.8, max_tokens: 500 })
+      body: JSON.stringify({ model: model, messages: [{ role:'system', content: sysMsg }, { role:'user', content: userMsg }], temperature: 0.7, max_tokens: 400, frequency_penalty: 0.4 })
     });
     var data = await response.json();
     var reply = data.choices[0].message.content;
