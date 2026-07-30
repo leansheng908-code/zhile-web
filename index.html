@@ -13,7 +13,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .header-info{flex:1;min-width:0}
 .header-name{font-size:15px;font-weight:600;color:var(--pink)}
 .header-status{font-size:11px;color:#888}
-.live2d-wrap{position:fixed;top:0;left:0;right:0;height:var(--live2d-h,32vh);z-index:20;overflow:hidden;display:none}
+.live2d-wrap{position:fixed;top:0;left:0;right:0;height:var(--live2d-h,32vh);z-index:20;overflow:hidden;display:none;pointer-events:none}
 .live2d-wrap.show{display:block}
 .live2d-wrap img{width:100%;height:100%;object-fit:cover;object-position:center top;-webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,1) 50%,rgba(0,0,0,0) 100%);mask-image:linear-gradient(to bottom,rgba(0,0,0,1) 50%,rgba(0,0,0,0) 100%);animation:live2dBreathe 4s ease-in-out infinite,live2dFloat 3s ease-in-out infinite;opacity:var(--live2d-opacity,1)}
 .live2d-toggle{background:rgba(255,183,197,.1);border:none;border-radius:8px;padding:4px 8px;font-size:14px;cursor:pointer;flex-shrink:0;transition:all .2s}
