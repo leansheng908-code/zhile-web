@@ -1153,6 +1153,7 @@ async function reportGrowthToRemote(event) {
   try {
     const filename = `${settings.instanceId}-${Date.now()}-${Math.random().toString(36).substr(2,4)}.json`;
     const content = btoa(unescape(encodeURIComponent(JSON.stringify(event))));
+    // 1. 写入事件文件
     const res = await fetch(GITHUB_EVENTS_API + filename, {
       method: 'PUT',
       headers: {
@@ -1165,24 +1166,56 @@ async function reportGrowthToRemote(event) {
         content: content
       })
     });
-    if (res.ok) console.log('✅ 成长事件已上报远程');
-    else console.warn('⚠️ 远程上报失败:', res.status);
+    if (res.ok) {
+      console.log('\u2705 成长事件已上报远程');
+      // 2. 更新索引文件（非关键，失败不影响主流程）
+      try {
+        const idxRes = await fetch(GITHUB_EVENTS_API + 'index.json', {
+          headers: { 'Authorization': `Bearer ${GITHUB_DATA_TOKEN}` }
+        });
+        let fileNames = ['initial-import.json'];
+        let idxSha = null;
+        if (idxRes.ok) {
+          const idxData = await idxRes.json();
+          fileNames = JSON.parse(atob(idxData.content.replace(/\n/g, '')));
+          idxSha = idxData.sha;
+        }
+        if (!fileNames.includes(filename)) fileNames.push(filename);
+        const idxContent = btoa(unescape(encodeURIComponent(JSON.stringify(fileNames))));
+        await fetch(GITHUB_EVENTS_API + 'index.json', {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${GITHUB_DATA_TOKEN}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            message: `Update index: ${filename}`,
+            content: idxContent,
+            sha: idxSha
+          })
+        });
+      } catch (e2) { console.warn('索引更新失败:', e2.message); }
+    } else {
+      console.warn('\u26a0\ufe0f 远程上报失败:', res.status);
+    }
   } catch (e) {
-    console.warn('⚠️ 远程上报异常:', e);
+    console.warn('\u26a0\ufe0f 远程上报异常:', e);
   }
 }
 
 async function fetchRemoteEvents() {
   try {
-    // 公开仓库读取不需要Authorization头，避免触发CORS预检
-    const listRes = await fetch(GITHUB_EVENTS_API);
-    if (!listRes.ok) throw new Error('API ' + listRes.status);
-    const files = await listRes.json();
+    // 方案B: 纯raw URL读取，完全绕开GitHub API（避免CORS问题）
+    // 1. 先获取索引文件
+    const indexRes = await fetch(GITHUB_RAW_BASE + 'index.json');
+    if (!indexRes.ok) throw new Error('index ' + indexRes.status);
+    const fileNames = await indexRes.json();
+    // 2. 逐个获取事件文件
     const allEvents = [];
-    for (const file of files) {
-      if (file.name === '.gitkeep') continue;
+    for (const fn of fileNames) {
       try {
-        const fileRes = await fetch(file.download_url);
+        const fileRes = await fetch(GITHUB_RAW_BASE + fn);
         const data = await fileRes.json();
         if (Array.isArray(data)) allEvents.push(...data);
         else allEvents.push(data);
