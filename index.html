@@ -352,7 +352,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
-<div class="growth-panel" id="diary-panel" style="display:none">
+<div class="growth-panel" id="diary-panel">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
     <h3 style="color:var(--pink)">📔 知乐的日记</h3>
     <button class="btn btn-secondary" onclick="toggleDiaryPanel()" style="padding:4px 12px;font-size:12px">关闭</button>
@@ -3220,11 +3220,11 @@ function toggleDiaryPanel() {
   var panel = document.getElementById('diary-panel');
   var growth = document.getElementById('growth-panel');
   if (growth.classList.contains('open')) growth.classList.remove('open');
-  if (panel.style.display === 'none') {
-    panel.style.display = 'block';
-    renderDiary();
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open');
   } else {
-    panel.style.display = 'none';
+    panel.classList.add('open');
+    renderDiary();
   }
 }
 
