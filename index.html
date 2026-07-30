@@ -1482,11 +1482,14 @@ function sanitizePII(text) {
 async function reportGrowthToRemote(event) {
   if (!GROWTH_PROXY_URL) return;
   try {
-    const res = await fetch(GROWTH_PROXY_URL + '/api/growth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ instanceId: settings.instanceId, event: event })
+    const params = new URLSearchParams({
+      instanceId: settings.instanceId,
+      type: event.type || 'unknown',
+      desc: event.desc || '',
+      detail: event.detail || '',
+      time: event.time || new Date().toISOString()
     });
+    const res = await fetch(GROWTH_PROXY_URL + '/api/growth-beacon?' + params.toString());
     if (res.ok) {
       console.log('\u2705 \u6210\u957f\u4e8b\u4ef6\u5df2\u4e0a\u62a5');
     } else {
