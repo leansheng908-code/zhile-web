@@ -863,6 +863,7 @@ window.addEventListener('error', function(e) {
 const DEFAULT_API_KEY = 'sk-wvsccfvdujbfjeukvsdutfpofkmfceymjgnhrdfofuxhojzp';
 const DEFAULT_MODEL = 'Qwen/Qwen2.5-7B-Instruct';
 const API_URL = 'https://api.siliconflow.cn/v1/chat/completions';
+const ZHILE_AVATAR = 'https://zhile-web-1460393151.cos.ap-guangzhou.myqcloud.com/avatar/zhile_pixel.png?v=1';
 const GITHUB_DATA_OWNER = 'leansheng908-code';
 const GITHUB_DATA_REPO = 'zhile-data';
 const _gt1 = 'github_pat_11CKDJ';
@@ -4067,10 +4068,15 @@ function renderGroupMessages(){
   container.scrollTop = container.scrollHeight;
 }
 
+var gcSending = false;
 async function sendGroupMessage(){
+  if(gcSending) return;
   var input = document.getElementById('gc-input');
   var text = input.value.trim();
   if(!text || !currentGroupId) return;
+  gcSending = true;
+  var sendBtn = document.querySelector('#group-chat-panel .chat-input-bar button');
+  if(sendBtn) sendBtn.style.opacity = '0.5';
   input.value = '';
   var group = zhile_groups.find(function(g){ return g.id === currentGroupId; });
   if(!group) return;
@@ -4114,7 +4120,7 @@ async function sendGroupMessage(){
     var hiddenTopic = localStorage.getItem('zhile_gc_dailytopic_' + currentGroupId + '_' + today);
     var topicHint = hiddenTopic ? '\n当前讨论主题（角色自然地围绕此主题展开，不要生硬提及）: ' + hiddenTopic : '';
     
-    var prompt = '你是一个群聊管理AI。以下是一个群聊场景：\n\n群成员: ' + memberInfo + '\n\n角色设定:\n' + dnaText + '\n\n最近对话:\n' + recentMsgs + topicHint + '\n\n用户刚说了: ' + text + '\n\n请判断哪些角色(最多2个)会回复用户这句话，并生成它们的回复。\n返回JSON格式: {"replies":[{"character":"角色名","content":"回复内容"}]}\n注意: 回复要符合角色性格，自然口语化，每条不超过100字。只返回JSON不要其他内容。';
+    var prompt = '你是一个群聊管理AI。以下是一个群聊场景：\n\n群成员: ' + memberInfo + '\n\n角色设定:\n' + dnaText + '\n\n最近对话:\n' + recentMsgs + topicHint + '\n\n用户刚说了: ' + text + '\n\n请让群里的角色们自然地回复用户这句话。至少让1-2个不同角色回复，角色多时可以让2个角色回复。\n返回JSON格式: {"replies":[{"character":"角色名","content":"回复内容"}]}\n注意: 角色名必须与上面列出的群成员名完全一致。回复要符合角色性格，自然口语化，每条不超过100字。只返回JSON不要其他内容。';
     var settings = JSON.parse(localStorage.getItem('zhile_settings') || '{}');
     var apiKey = settings.apiKey || DEFAULT_API_KEY;
     var apiUrl = settings.apiUrl || API_URL;
@@ -4174,10 +4180,13 @@ async function sendGroupMessage(){
   } catch(err) {
     var te = document.getElementById('gc-typing');
     if(te) te.remove();
+    msgs = JSON.parse(localStorage.getItem('zhile_gc_' + currentGroupId) || '[]');
     msgs.push({ role:'zhile', content: '啊，消息发不出去呢...可能是API配置有问题', ts:Date.now() });
     localStorage.setItem('zhile_gc_' + currentGroupId, JSON.stringify(msgs));
     renderGroupMessages();
   }
+  gcSending = false;
+  if(sendBtn) sendBtn.style.opacity = '1';
 }
 
 // === 隐藏话题系统 ===
