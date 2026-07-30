@@ -203,6 +203,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .gc-summary-card .sc-topic{font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:8px;font-style:italic}
 .gc-summary-card .sc-preview{font-size:13px;color:rgba(255,255,255,0.7);line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .gc-summary-card .sc-meta{display:flex;gap:12px;margin-top:10px;flex-wrap:wrap}
+/* 群聊消息气泡 */
+#gc-messages .msg-bubble{display:flex;gap:8px;margin-bottom:10px;align-items:flex-start}
+#gc-messages .msg-bubble.msg-user{flex-direction:row-reverse;margin-left:60px}
+#gc-messages .msg-bubble.msg-other{margin-right:60px}
+#gc-messages .msg-avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,183,197,.12);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;overflow:hidden;color:var(--pink)}
+#gc-messages .msg-content{display:flex;flex-direction:column;min-width:0;max-width:100%}
+#gc-messages .msg-text{background:rgba(255,255,255,.07);padding:8px 14px;border-radius:14px;font-size:14px;color:var(--text);word-break:break-word;line-height:1.5;max-width:100%}
+#gc-messages .msg-bubble.msg-user .msg-text{background:var(--user);color:#fff;border-radius:14px 14px 4px 14px}
+#gc-messages .msg-bubble.msg-other .msg-text{border-radius:14px 14px 14px 4px}
+/* 群聊输入框 */
+#group-chat-panel .chat-input-bar{background:var(--card);padding:10px 12px;display:flex;gap:8px;align-items:center;border-top:1px solid rgba(255,183,197,.15);flex-shrink:0;padding-bottom:max(10px,env(safe-area-inset-bottom))}
+#gc-input{flex:1;background:var(--bg);border:1px solid rgba(255,183,197,.2);border-radius:22px;padding:10px 16px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s}
+#gc-input:focus{border-color:var(--pink)}
+#gc-input::placeholder{color:rgba(255,255,255,.25)}
+#group-chat-panel .chat-input-bar button{background:linear-gradient(135deg,var(--pink),#e0568a);color:#fff;border:none;border-radius:22px;padding:8px 18px;font-size:14px;font-weight:600;cursor:pointer;flex-shrink:0;transition:all .2s;box-shadow:0 2px 8px rgba(255,107,157,.3)}
+#group-chat-panel .chat-input-bar button:active{transform:scale(.95)}
+/* 群聊思考动画 */
+.gc-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--pink);margin:0 3px;animation:gcBounce 1.4s infinite ease-in-out both}
+.gc-dot:nth-child(1){animation-delay:-.32s}
+.gc-dot:nth-child(2){animation-delay:-.16s}
+@keyframes gcBounce{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
 .gc-summary-card .sc-btn{font-size:12px;padding:4px 10px;border-radius:6px;cursor:pointer;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7)}
 .gc-summary-card .sc-btn:active{background:rgba(255,255,255,0.12)}
 .gc-summary-card .sc-btn.sc-danger{color:#ff6b6b;border-color:rgba(255,107,107,0.3)}
@@ -4031,7 +4052,7 @@ function renderGroupMessages(){
     if(!isUser){
       var nameDiv = document.createElement('div');
       nameDiv.style.fontSize = '11px';
-      nameDiv.style.color = msg.role === 'zhile' ? 'var(--accent-color)' : 'rgba(255,255,255,0.5)';
+      nameDiv.style.color = msg.role === 'zhile' ? 'var(--accent)' : 'rgba(255,255,255,0.5)';
       nameDiv.style.marginBottom = '2px';
       nameDiv.textContent = msg.role === 'zhile' ? '知乐' : (f ? f.name : '?');
       content.appendChild(nameDiv);
@@ -4067,7 +4088,7 @@ async function sendGroupMessage(){
   var typingDiv = document.createElement('div');
   typingDiv.className = 'msg-bubble msg-other';
   typingDiv.id = 'gc-typing';
-  typingDiv.innerHTML = '<div class="msg-avatar">💬</div><div class="msg-content"><div class="msg-text typing">正在思考...</div></div>';
+  typingDiv.innerHTML = '<div class="msg-avatar">💬</div><div class="msg-content"><div class="msg-text"><span class="gc-dot"></span><span class="gc-dot"></span><span class="gc-dot"></span></div></div>';
   container.appendChild(typingDiv);
   container.scrollTop = container.scrollHeight;
   try {
