@@ -176,20 +176,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* ===== 论坛系统 ===== */
 #forum-panel{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:100;display:none;flex-direction:column}
 #forum-panel.open{display:flex}
+#forum-detail-panel{display:none;flex-direction:column}
 #forum-detail-panel.open{display:flex}
-.forum-header{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
-.forum-header .forum-title{font-size:16px;color:#fff;font-weight:600;flex:1}
+.forum-header{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(255,183,197,.12);background:rgba(255,183,197,.03)}
+.forum-header .forum-title{font-size:17px;color:#fff;font-weight:700;flex:1}
 .forum-body{flex:1;overflow-y:auto;padding:0;-webkit-overflow-scrolling:touch}
 .forum-tab-bar{display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,.06)}
 .forum-tab{flex:1;text-align:center;padding:10px;font-size:13px;color:#888;cursor:pointer;border-bottom:2px solid transparent}
 .forum-tab.active{color:var(--pink);border-bottom-color:var(--pink)}
-.forum-topic{display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer}
-.forum-topic:active{background:rgba(255,255,255,.04)}
-.forum-topic.featured{background:rgba(255,215,0,.04)}
-.forum-topic-avatar{width:36px;height:36px;border-radius:50%;background:rgba(255,183,197,.12);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.forum-topic{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;transition:background .15s}
+.forum-topic:active{background:rgba(255,183,197,.06)}
+.forum-topic.featured{background:rgba(255,215,0,.05);border-left:3px solid rgba(255,215,0,.3)}
+.forum-topic-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,rgba(255,183,197,.15),rgba(135,206,235,.15));display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;border:1px solid rgba(255,255,255,.08)}
 .forum-topic-main{flex:1;min-width:0}
-.forum-topic-title{font-size:14px;color:#fff;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.forum-topic-meta{display:flex;gap:8px;margin-top:4px;font-size:11px;color:#666}
+.forum-topic-title{font-size:15px;color:#fff;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4}
+.forum-topic-preview{font-size:12px;color:#888;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.3}
+.forum-topic-meta{display:flex;gap:8px;margin-top:5px;font-size:11px;color:#555;align-items:center}
+.forum-topic-meta .forum-meta-author{color:var(--pink);font-weight:500}
 .forum-badge-featured{font-size:10px;color:var(--gold);background:rgba(255,215,0,.12);padding:1px 6px;border-radius:4px}
 .forum-badge-locked{font-size:10px;color:#888;background:rgba(255,255,255,.06);padding:1px 6px;border-radius:4px}
 .forum-fab{position:fixed;bottom:80px;right:20px;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--pink),#e0568a);border:none;color:#fff;font-size:24px;cursor:pointer;box-shadow:0 4px 12px rgba(255,107,157,.4);z-index:101}
@@ -197,12 +200,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* 话题详情 */
 .forum-detail-header{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
 .forum-detail-body{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
-.forum-op{background:rgba(255,255,255,.04);border-radius:12px;padding:14px;margin-bottom:16px}
-.forum-op-title{font-size:16px;color:#fff;font-weight:600;margin-bottom:8px}
-.forum-op-content{font-size:14px;color:var(--text);line-height:1.6}
-.forum-op-meta{display:flex;gap:8px;margin-top:10px;font-size:11px;color:#666}
-.forum-floor{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.03)}
-.forum-floor-avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,183,197,.1);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.forum-op{background:linear-gradient(135deg,rgba(255,183,197,.06),rgba(135,206,235,.04));border:1px solid rgba(255,183,197,.15);border-radius:14px;padding:16px;margin-bottom:16px}
+.forum-op-title{font-size:17px;color:#fff;font-weight:700;margin-bottom:10px;line-height:1.4}
+.forum-op-content{font-size:14px;color:rgba(255,255,255,.85);line-height:1.7;word-break:break-word}
+.forum-op-meta{display:flex;gap:8px;margin-top:12px;font-size:11px;color:#666;align-items:center;flex-wrap:wrap}
+.forum-floor{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.forum-floor:active{background:rgba(255,255,255,.02);border-radius:8px}
+.forum-floor-avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,183,197,.1);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;border:1px solid rgba(255,255,255,.06)}
 .forum-floor-main{flex:1;min-width:0}
 .forum-floor-header{display:flex;gap:6px;align-items:center;font-size:12px}
 .forum-floor-name{color:var(--pink);font-weight:500}
@@ -492,7 +496,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     
     <!-- Forum Detail Panel -->
-    <div id="forum-detail-panel" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:101;display:none;flex-direction:column">
+    <div id="forum-detail-panel" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:101">
       <div class="forum-detail-header">
         <button class="btn-back" onclick="closeTopicDetail()">‹</button>
         <div class="forum-title" style="flex:1">话题详情</div>
@@ -3085,8 +3089,10 @@ function closeSidebar(){
 function toggleSidebar() {
   const sb = document.getElementById('sidebar');
   const ov = document.getElementById('sidebar-overlay');
+  const hd = document.querySelector('.header');
   const isOpen = sb.classList.toggle('open');
   ov.classList.toggle('show', isOpen);
+  if(hd) hd.style.visibility = isOpen ? 'hidden' : '';
   if (isOpen) {
     const uid = document.getElementById('sidebar-uid');
     const name = settings.nickname ? settings.nickname + ' · ' : '';
@@ -3971,12 +3977,14 @@ function renderForumList(){
       var badges = '';
       if(t.featured) badges += ' <span class="forum-badge-featured">精选</span>';
       if(t.locked) badges += ' <span class="forum-badge-locked">已锁</span>';
+      var preview = t.content ? t.content.substring(0, 40) : '';
       html += '<div class="forum-topic' + (t.featured ? ' featured' : '') + '" onclick="openTopicDetail(\'' + t.id + '\')">' +
         '<div class="forum-topic-avatar">' + avatar + '</div>' +
         '<div class="forum-topic-main">' +
           '<div class="forum-topic-title">' + escapeHtml(t.title) + badges + '</div>' +
+          (preview ? '<div class="forum-topic-preview">' + escapeHtml(preview) + '</div>' : '') +
           '<div class="forum-topic-meta">' +
-            '<span>' + escapeHtml(t.authorName) + '</span>' +
+            '<span class="forum-meta-author">' + escapeHtml(t.authorName) + '</span>' +
             '<span>' + (t.replies ? t.replies.length : 0) + '回复</span>' +
             '<span>' + formatForumTime(t.ts) + '</span>' +
           '</div>' +
@@ -4012,12 +4020,14 @@ function renderForumFeatured(){
   } else {
     topics.forEach(function(t){
       var avatar = t.author === 'zhile' ? '🐱' : (t.author === 'user' ? '🙋' : '🎭');
+      var preview = t.content ? t.content.substring(0, 40) : '';
       html += '<div class="forum-topic featured" onclick="openTopicDetail(\'' + t.id + '\')">' +
         '<div class="forum-topic-avatar">' + avatar + '</div>' +
         '<div class="forum-topic-main">' +
           '<div class="forum-topic-title">' + escapeHtml(t.title) + ' <span class="forum-badge-featured">精选</span></div>' +
+          (preview ? '<div class="forum-topic-preview">' + escapeHtml(preview) + '</div>' : '') +
           '<div class="forum-topic-meta">' +
-            '<span>' + escapeHtml(t.authorName) + '</span>' +
+            '<span class="forum-meta-author">' + escapeHtml(t.authorName) + '</span>' +
             '<span>' + (t.replies ? t.replies.length : 0) + '回复</span>' +
             '<span>' + formatForumTime(t.ts) + '</span>' +
           '</div>' +
