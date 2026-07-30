@@ -830,6 +830,14 @@ food = 油炸大鸡腿 / 伯爵红茶脆脆鲨威化
 </script>
 
 <script>
+// Global error handler
+window.addEventListener('error', function(e) {
+  if(!window.__errShown) {
+    window.__errShown = true;
+    alert('页面JS错误: ' + e.message + '\n行: ' + e.lineno + ':' + e.colno);
+  }
+});
+
 // ============ 配置 ============
 const DEFAULT_API_KEY = 'sk-wvsccfvdujbfjeukvsdutfpofkmfceymjgnhrdfofuxhojzp';
 const DEFAULT_MODEL = 'Qwen/Qwen2.5-7B-Instruct';
@@ -3700,6 +3708,9 @@ function acceptDisclaimer() {
   localStorage.setItem('zhile_disclaimer_accepted', '1');
   document.getElementById('disclaimer-overlay').style.display = 'none';
 }
+var zhile_groups = JSON.parse(localStorage.getItem('zhile_groups') || '[]');
+var currentGroupId = null;
+
 
 // 启动
 init();
@@ -3858,8 +3869,6 @@ async function submitComment(momentId) {
 }
 
 async // === Group Chat System ===
-var currentGroupId = null;
-var zhile_groups = JSON.parse(localStorage.getItem('zhile_groups') || '[]');
 var gcSelectedMembers = [];
 var gcEditMode = false;
 var gcEditId = null;
@@ -3874,18 +3883,17 @@ function updateGcSummary(){
 }
 
 function openGcCreateModal(){
-  alert('DEBUG: 创建群聊弹窗正在打开!');
   var modal = document.getElementById('gc-create-modal');
   modal.classList.add('open');
   document.getElementById('gc-modal-title').textContent = '创建群聊';
   // 渲染好友列表
   var list = document.getElementById('gc-member-list');
   list.innerHTML = '';
-  if(zhile_friends.length === 0){
+  if(friends.length === 0){
     list.innerHTML = '<div style="color:rgba(255,255,255,0.3);text-align:center;padding:20px">还没有好友，先添加好友吧</div>';
     return;
   }
-  zhile_friends.forEach(function(f){
+  friends.forEach(function(f){
     var item = document.createElement('label');
     item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px;cursor:pointer;border-radius:8px;transition:background .2s';
     item.innerHTML = '<input type="checkbox" value="' + f.id + '" style="accent-color:var(--pink)"> <span>' + escapeHtml(f.name) + '</span>';
@@ -3920,7 +3928,7 @@ function confirmCreateGroup(){
   // 自动命名
   var names = ['知乐'];
   members.slice(1).forEach(function(mid){
-    var f = zhile_friends.find(function(fr){ return fr.id === mid; });
+    var f = friends.find(function(fr){ return fr.id === mid; });
     if(f) names.push(f.name);
   });
   group.name = names.join('\u00b7');
@@ -3938,7 +3946,7 @@ function showGroupSettings(){
   // 简单设置：显示成员列表+删除群聊
   var html_str = '成员: ' + group.members.map(function(mid){
     if(mid === 'zhile') return '知乐';
-    var f = zhile_friends.find(function(fr){ return fr.id === mid; });
+    var f = friends.find(function(fr){ return fr.id === mid; });
     return f ? f.name : '?';
   }).join(', ');
   html_str += '\n群名: ' + group.name;
@@ -3951,7 +3959,6 @@ function showGroupSettings(){
 }
 
 function openGroupChatPanel(){
-  alert('DEBUG: 群聊入口被点击! groups=' + zhile_groups.length + ', friends=' + zhile_friends.length);
   closeSidebar();
   if(zhile_groups.length === 0){
     openGcCreateModal();
@@ -3969,7 +3976,7 @@ function openGroupChat(groupId){
   document.getElementById('gc-title-text').textContent = group.name;
   var memberNames = group.members.map(function(mid){
     if(mid === 'zhile') return '知乐';
-    var f = zhile_friends.find(function(fr){ return fr.id === mid; });
+    var f = friends.find(function(fr){ return fr.id === mid; });
     return f ? f.name : '?';
   });
   document.getElementById('gc-online-text').textContent = memberNames.join(' ');
@@ -4007,7 +4014,7 @@ function renderGroupMessages(){
     if(!isUser){
       var avatar = document.createElement('div');
       avatar.className = 'msg-avatar';
-      var f = msg.role === 'zhile' ? null : zhile_friends.find(function(fr){ return fr.id === msg.role; });
+      var f = msg.role === 'zhile' ? null : friends.find(function(fr){ return fr.id === msg.role; });
       if(msg.role === 'zhile'){
         avatar.innerHTML = '<img src="' + ZHILE_AVATAR + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover">';
       } else if(f && f.avatar){
@@ -4063,17 +4070,17 @@ async function sendGroupMessage(){
   container.scrollTop = container.scrollHeight;
   try {
     var recentMsgs = msgs.slice(-10).map(function(m){
-      var name = m.role === 'user' ? '用户' : (m.role === 'zhile' ? '知乐' : (zhile_friends.find(function(f){ return f.id === m.role; }) || {}).name || '?');
+      var name = m.role === 'user' ? '用户' : (m.role === 'zhile' ? '知乐' : (friends.find(function(f){ return f.id === m.role; }) || {}).name || '?');
       return name + ': ' + m.content;
     }).join('\n');
     var memberInfo = group.members.map(function(mid){
       if(mid === 'zhile') return '知乐(猫耳少女)';
-      var f = zhile_friends.find(function(fr){ return fr.id === mid; });
+      var f = friends.find(function(fr){ return fr.id === mid; });
       return f ? f.name : '?';
     }).join(', ');
     var dnaText = group.members.map(function(mid){
       if(mid === 'zhile') return '【知乐】性格: 银发猫耳软萌少女，甜糯粘人，口头禅亲爱的';
-      var f = zhile_friends.find(function(fr){ return fr.id === mid; });
+      var f = friends.find(function(fr){ return fr.id === mid; });
       if(!f || !f.dna) return f ? '【'+f.name+'】无DNA' : '';
       var desc = '';
       try { var d = JSON.parse(f.dna); desc = d.description || d.personality || d.system_prompt || ''; } catch(e) { desc = (f.dna || '').substring(0, 200); }
@@ -4107,7 +4114,7 @@ async function sendGroupMessage(){
         var charContent = replies[i].content || '';
         var memberId = 'zhile';
         if(charName !== '知乐'){
-          var found = zhile_friends.find(function(fr){ return fr.name === charName; });
+          var found = friends.find(function(fr){ return fr.name === charName; });
           if(found) memberId = found.id; else continue;
         }
         await new Promise(function(r){ setTimeout(r, i * 800); });
@@ -4149,7 +4156,7 @@ async function generateDailyTopic(groupId, firstMessage){
   
   var memberNames = group.members.map(function(mid){
     if(mid === 'zhile') return '知乐';
-    var f = zhile_friends.find(function(fr){ return fr.id === mid; });
+    var f = friends.find(function(fr){ return fr.id === mid; });
     return f ? f.name : '?';
   }).join(', ');
   
@@ -4213,13 +4220,13 @@ async function summarizeGroupChat(){
   
   try {
     var chatText = msgs.map(function(m){
-      var name = m.role === 'user' ? '我' : (m.role === 'zhile' ? '知乐' : (zhile_friends.find(function(f){ return f.id === m.role; }) || {}).name || '?');
+      var name = m.role === 'user' ? '我' : (m.role === 'zhile' ? '知乐' : (friends.find(function(f){ return f.id === m.role; }) || {}).name || '?');
       return name + ': ' + m.content;
     }).join('\n');
     
     var memberNames = group.members.map(function(mid){
       if(mid === 'zhile') return '知乐';
-      var f = zhile_friends.find(function(fr){ return fr.id === mid; });
+      var f = friends.find(function(fr){ return fr.id === mid; });
       return f ? f.name : '?';
     }).join(', ');
     
