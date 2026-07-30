@@ -273,17 +273,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
   <div style="border-bottom:1px solid rgba(255,255,255,0.06)">
-          <div class="group-chat-entry" onclick="viewGcSummaries()" style="border-bottom:none">
-            <span class="gc-icon">📋</span>
-            <span class="gc-name">群聊总结</span>
-            <span class="gc-members" id="gc-summary-count-side"></span>
-          </div>
+          
         </div>
         <div style="border-bottom:1px solid rgba(255,255,255,0.06)">
           <div class="group-chat-entry" onclick="openGroupChatPanel()">
             <span class="gc-icon">💬</span>
             <span class="gc-name">群聊</span>
             <span class="gc-members" id="gc-summary"></span>
+          </div>
+          <div class="group-chat-entry" onclick="viewGcSummaries()" style="border-bottom:none">
+            <span class="gc-icon">📋</span>
+            <span class="gc-name">日常</span>
+            <span class="gc-members" id="gc-summary-count-side"></span>
           </div>
         </div>
         <div class="sidebar-item" onclick="toggleSidebar();showAddFriend()">
@@ -474,7 +475,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="gc-summary-view" id="gc-summary-view">
       <div class="gc-header">
         <button class="btn-back" onclick="closeGcSummaryView()">‹</button>
-        <div class="gc-title">群聊总结</div>
+        <div class="gc-title">日常</div>
         <div style="font-size:12px;color:rgba(255,255,255,0.4)" id="gc-summary-count"></div>
       </div>
       <div class="gc-summary-list" id="gc-summary-list"></div>
@@ -3854,6 +3855,82 @@ function updateGcSummary(){
   if(sc){ var sums = JSON.parse(localStorage.getItem('zhile_gc_summaries') || '[]'); sc.textContent = sums.length > 0 ? sums.length + '篇' : ''; }
 }
 
+function openGcCreateModal(){
+  var modal = document.getElementById('gc-create-modal');
+  modal.style.display = 'block';
+  document.getElementById('gc-modal-title').textContent = '创建群聊';
+  // 渲染好友列表
+  var list = document.getElementById('gc-member-list');
+  list.innerHTML = '';
+  if(zhile_friends.length === 0){
+    list.innerHTML = '<div style="color:rgba(255,255,255,0.3);text-align:center;padding:20px">还没有好友，先添加好友吧</div>';
+    return;
+  }
+  zhile_friends.forEach(function(f){
+    var item = document.createElement('label');
+    item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px;cursor:pointer;border-radius:8px;transition:background .2s';
+    item.innerHTML = '<input type="checkbox" value="' + f.id + '" style="accent-color:var(--pink)"> <span>' + escapeHtml(f.name) + '</span>';
+    item.onmouseover = function(){ this.style.background = 'rgba(255,255,255,0.05)'; };
+    item.onmouseout = function(){ this.style.background = ''; };
+    list.appendChild(item);
+  });
+}
+
+function closeGcCreateModal(){
+  document.getElementById('gc-create-modal').style.display = 'none';
+}
+
+function confirmCreateGroup(){
+  var checkboxes = document.querySelectorAll('#gc-member-list input[type=checkbox]:checked');
+  if(checkboxes.length === 0){
+    showToast('请至少选择一个好友');
+    return;
+  }
+  if(checkboxes.length > 4){
+    showToast('群成员最多5人（含知乐）');
+    return;
+  }
+  var members = ['zhile'];
+  checkboxes.forEach(function(cb){ members.push(cb.value); });
+  var group = {
+    id: 'gc_' + Date.now(),
+    name: '',
+    members: members,
+    createdTime: Date.now()
+  };
+  // 自动命名
+  var names = ['知乐'];
+  members.slice(1).forEach(function(mid){
+    var f = zhile_friends.find(function(fr){ return fr.id === mid; });
+    if(f) names.push(f.name);
+  });
+  group.name = names.join('\u00b7');
+  zhile_groups.push(group);
+  saveGroups();
+  closeGcCreateModal();
+  openGroupChat(group.id);
+  showToast('群聊已创建');
+}
+
+function showGroupSettings(){
+  if(!currentGroupId) return;
+  var group = zhile_groups.find(function(g){ return g.id === currentGroupId; });
+  if(!group) return;
+  // 简单设置：显示成员列表+删除群聊
+  var html_str = '成员: ' + group.members.map(function(mid){
+    if(mid === 'zhile') return '知乐';
+    var f = zhile_friends.find(function(fr){ return fr.id === mid; });
+    return f ? f.name : '?';
+  }).join(', ');
+  html_str += '\n群名: ' + group.name;
+  if(confirm(html_str + '\n\n确定要删除这个群聊吗？')){
+    zhile_groups = zhile_groups.filter(function(g){ return g.id !== currentGroupId; });
+    saveGroups();
+    closeGroupChatPanel();
+    showToast('群聊已删除');
+  }
+}
+
 function openGroupChatPanel(){
   if(zhile_groups.length === 0){ openGcCreateModal(false); return; }
   openGroupChat(zhile_groups[0].id);
@@ -4095,7 +4172,7 @@ function checkGroupTopic(){
   }
 }
 
-// === 群聊总结系统 ===
+// === 日常记录系统 ===
 async function summarizeGroupChat(){
   if(!currentGroupId) return;
   var group = zhile_groups.find(function(g){ return g.id === currentGroupId; });
@@ -4260,7 +4337,7 @@ function exportGcSummary(summaryId){
   var s = summaries.find(function(x){ return x.id === summaryId; });
   if(!s) return;
   
-  var text = '群聊总结 - ' + s.groupName + '\n';
+  var text = '日常记录 - ' + s.groupName + '\n';
   text += '日期: ' + s.date + '\n';
   text += '话题: ' + s.topic + '\n';
   text += '成员: ' + s.memberNames + '\n';
@@ -4271,7 +4348,7 @@ function exportGcSummary(summaryId){
   var blob = new Blob([text], {type:'text/plain;charset=utf-8'});
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = '群聊总结_' + s.groupName + '_' + s.date.replace(/\s/g,'') + '.txt';
+  a.download = '日常记录_' + s.groupName + '_' + s.date.replace(/\s/g,'') + '.txt';
   a.click();
   URL.revokeObjectURL(a.href);
   showToast('已导出');
@@ -4282,7 +4359,7 @@ function syncGcToMemory(summaryId){
   var s = summaries.find(function(x){ return x.id === summaryId; });
   if(!s) return;
   
-  if(!confirm('将这条群聊总结同步到参与角色的记忆中？\n每个角色都会收到一条记忆消息。')){
+  if(!confirm('将这条日常记录同步到参与角色的记忆中？\n每个角色都会收到一条记忆消息。')){
     return;
   }
   
@@ -4325,7 +4402,7 @@ function renderGcSummaryList(){
   document.getElementById('gc-summary-count').textContent = summaries.length + '/30';
   
   if(summaries.length === 0){
-    container.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px 16px;font-size:14px">还没有群聊总结<br>在群聊中点击\u{1F4DD}按钮即可总结</div>';
+    container.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px 16px;font-size:14px">还没有日常记录<br>在群聊中点击\u{1F4DD}按钮即可总结</div>';
     return;
   }
   
