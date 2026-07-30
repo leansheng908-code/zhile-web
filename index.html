@@ -112,6 +112,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .emoji-cell.locked{min-height:38px}
 .emoji-cell.locked::before{content:'?';color:#444;font-size:16px}
 .emoji-cell .emoji-count{font-size:9px;color:#666;margin-top:2px}
+.sticker-cell{padding:4px;border-radius:8px;background:rgba(255,183,197,.08);border:1px solid rgba(255,183,197,.1);text-align:center;cursor:default;transition:all .2s;position:relative}
+.sticker-cell:hover{background:rgba(255,183,197,.15);transform:scale(1.05)}
+.sticker-cell img{width:40px;height:40px;border-radius:6px;object-fit:cover;display:block;margin:0 auto}
+.sticker-cell .sticker-label{font-size:9px;color:#aaa;margin-top:2px}
+.sticker-cell .emoji-count{font-size:9px;color:#666}
+.sticker-cell.locked{min-height:52px;display:flex;align-items:center;justify-content:center}
+.mood-section-title{font-size:12px;color:#888;margin:12px 0 6px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.05)}
 .timeline{position:relative;padding-left:8px;margin-top:8px}
 .timeline::before{content:'';position:absolute;left:5px;top:0;bottom:0;width:2px;background:rgba(255,183,197,.2)}
 .tl-day{color:var(--gold);font-size:12px;font-weight:600;margin:10px 0 6px 8px}
@@ -244,7 +251,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div id="growth-list"><div style="color:#666;font-size:12px;text-align:center;padding:20px">还没有成长事件</div></div>
   </div>
   <div class="tab-content" id="tab-emoji">
-    <h3>📖 颜文字图鉴 <span id="emoji-count" style="font-size:11px;color:#666;font-weight:normal"></span></h3>
+    <h3>📖 心情图鉴 <span id="emoji-count" style="font-size:11px;color:#666;font-weight:normal"></span></h3>
     <div id="emoji-grid" class="emoji-grid"></div>
   </div>
   <div class="tab-content" id="tab-ach">
@@ -505,6 +512,7 @@ let isWaiting = false;
 let chatCount = parseInt(localStorage.getItem('zhile_chat_count') || '0');
 let achievements = JSON.parse(localStorage.getItem('zhile_achievements') || '{}');
 let emojiCollection = JSON.parse(localStorage.getItem('zhile_emoji_collection') || '{}');
+let stickerCollection = JSON.parse(localStorage.getItem('zhile_sticker_collection') || '{}');
 let loginDates = JSON.parse(localStorage.getItem('zhile_login_dates') || '[]');
 let secretLanguages = new Set(JSON.parse(localStorage.getItem('zhile_secret_langs') || '[]'));
 let _achLock = false;
@@ -948,6 +956,14 @@ function addZhileMsg(text, ts, emotion, animate) {
       stickerWrap.appendChild(label);
       div.appendChild(stickerWrap);
       scrollToBottom();
+      // 记录到贴纸图鉴
+      const sKey = stickerData.url;
+      if (!stickerCollection[sKey]) {
+        stickerCollection[sKey] = { firstSeen: new Date().toISOString(), count: 1, label: stickerData.label };
+      } else {
+        stickerCollection[sKey].count++;
+      }
+      localStorage.setItem('zhile_sticker_collection', JSON.stringify(stickerCollection));
     }
   }
   
@@ -1168,6 +1184,11 @@ async function reportGrowthToRemote(event) {
     });
     if (res.ok) {
       console.log('\u2705 成长事件已上报远程');
+      // 3. Purge jsDelivr CDN缓存（让新事件尽快可见）
+      try {
+        await fetch('https://purge.jsdelivr.net/gh/' + GITHUB_DATA_OWNER + '/' + GITHUB_DATA_REPO + '@main/events/index.json');
+        console.log('jsDelivr缓存已刷新');
+      } catch(e3) { console.warn('缓存刷新失败:', e3.message); }
       // 2. 更新索引文件（非关键，失败不影响主流程）
       try {
         const idxRes = await fetch(GITHUB_EVENTS_API + 'index.json', {
@@ -1208,7 +1229,7 @@ async function fetchRemoteEvents() {
   try {
     // 方案B: 纯raw URL读取，完全绕开GitHub API（避免CORS问题）
     // 1. 先获取索引文件
-    const indexRes = await fetch(GITHUB_RAW_BASE + 'index.json');
+    const indexRes = await fetch(GITHUB_RAW_BASE + 'index.json?t=' + Date.now());
     if (!indexRes.ok) throw new Error('index ' + indexRes.status);
     const fileNames = await indexRes.json();
     // 2. 逐个获取事件文件
@@ -1421,6 +1442,7 @@ function exportGrowth() {
     affection_log: affectionLog,
     achievements: achievements,
     emoji_collection: emojiCollection,
+    sticker_collection: stickerCollection,
     chat_count: chatCount,
     login_dates: loginDates,
     login_streak: getLoginStreak(),
@@ -1449,9 +1471,9 @@ const ACHIEVEMENTS = [
   { id: 'first_growth', name: '初次成长', desc: '第一次触发成长事件', icon: '🌱', reward: 3, check: () => growthEvents.length >= 1 },
   { id: 'growth_5', name: '茁壮成长', desc: '累计5次成长事件', icon: '🌿', reward: 5, check: () => growthEvents.length >= 5 },
   { id: 'growth_10', name: '破茧', desc: '累计10次成长事件', icon: '🦋', reward: 10, check: () => growthEvents.length >= 10 },
-  { id: 'emoji_5', name: '初窥门径', desc: '收集5种颜文字', icon: '📝', reward: 3, check: () => Object.keys(emojiCollection).length >= 5 },
-  { id: 'emoji_10', name: '颜文字爱好者', desc: '收集10种颜文字', icon: '📖', reward: 5, check: () => Object.keys(emojiCollection).length >= 10 },
-  { id: 'emoji_15', name: '颜文字大师', desc: '收集15种颜文字', icon: '🎨', reward: 10, check: () => Object.keys(emojiCollection).length >= 15 },
+  { id: 'emoji_5', name: '初窥门径', desc: '收集5种心情', icon: '📝', reward: 3, check: () => (Object.keys(emojiCollection).length + Object.keys(stickerCollection).length) >= 5 },
+  { id: 'emoji_10', name: '心情爱好者', desc: '收集10种心情', icon: '📖', reward: 5, check: () => (Object.keys(emojiCollection).length + Object.keys(stickerCollection).length) >= 10 },
+  { id: 'emoji_15', name: '心情大师', desc: '收集15种心情', icon: '🎨', reward: 10, check: () => (Object.keys(emojiCollection).length + Object.keys(stickerCollection).length) >= 15 },
   { id: 'first_secret', name: '心照不宣', desc: '第一次使用暗语', icon: '🌙', reward: 5, check: () => secretLanguages.size >= 1 },
   { id: 'secret_3', name: '暗语专家', desc: '使用3种不同暗语', icon: '🌟', reward: 10, check: () => secretLanguages.size >= 3 },
   { id: 'login_3', name: '三日之约', desc: '连续3天打开知乐', icon: '📅', reward: 5, check: () => getLoginStreak() >= 3 },
@@ -2452,7 +2474,7 @@ function clearChat() {
 }
 
 function exportData() {
-  const ZHILE_KEYS = ['zhile_settings','zhile_messages','zhile_growth','zhile_chat_count','zhile_achievements','zhile_emoji_collection','zhile_login_dates','zhile_secret_langs','zhile_affection','zhile_affection_log','zhile_daily_gain','zhile_last_login'];
+  const ZHILE_KEYS = ['zhile_settings','zhile_messages','zhile_growth','zhile_chat_count','zhile_achievements','zhile_emoji_collection','zhile_sticker_collection','zhile_login_dates','zhile_secret_langs','zhile_affection','zhile_affection_log','zhile_daily_gain','zhile_last_login'];
   const data = { _app: 'zhile-web', _version: '0.16', _exported: new Date().toISOString() };
   ZHILE_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v !== null) data[k] = v; });
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
