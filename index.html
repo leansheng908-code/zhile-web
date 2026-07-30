@@ -408,10 +408,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <h3 style="text-align:center;margin-bottom:12px;color:var(--pink)">➕ 添加好友</h3>
     <label>角色名字 *</label>
     <input type="text" id="friend-name" placeholder="给好友起个名字">
-    <label>头像URL（可选）</label>
-    <input type="text" id="friend-avatar" placeholder="https://...">
-    <label>背景图URL（可选）</label>
-    <input type="text" id="friend-bg" placeholder="https://...">
+    <label>头像（可选，点击上传）</label>
+    <div style="display:flex;align-items:center;gap:10px">
+      <img id="friend-avatar-preview" src="" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--pink);display:none">
+      <input type="file" id="friend-avatar-file" accept="image/*" style="flex:1;font-size:12px" onchange="previewFriendImage(this,'friend-avatar-preview','friend-avatar-data')">
+      <input type="hidden" id="friend-avatar-data">
+    </div>
+    <label>聊天背景图（可选，点击上传）</label>
+    <div style="display:flex;align-items:center;gap:10px">
+      <img id="friend-bg-preview" src="" style="width:48px;height:48px;border-radius:8px;object-fit:cover;border:2px solid var(--pink);display:none">
+      <input type="file" id="friend-bg-file" accept="image/*" style="flex:1;font-size:12px" onchange="previewFriendImage(this,'friend-bg-preview','friend-bg-data')">
+      <input type="hidden" id="friend-bg-data">
+    </div>
     <label>人格DNA *</label>
     <textarea id="friend-dna" rows="8" placeholder="粘贴角色的系统提示词/DNA文本..." style="resize:vertical"></textarea>
     <div style="display:flex;gap:8px;margin-top:12px">
@@ -2965,12 +2973,36 @@ function renderFriendList() {
   });
 }
 
+function previewFriendImage(input, previewId, dataId) {
+  var file = input.files[0];
+  if (!file) return;
+  if (file.size > 1024 * 1024) {
+    alert('图片太大啦，请选1MB以内的图～');
+    input.value = '';
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var preview = document.getElementById(previewId);
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    document.getElementById(dataId).value = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 function showAddFriend() { document.getElementById('add-friend-modal').classList.add('open'); }
 function closeAddFriend() {
   document.getElementById('add-friend-modal').classList.remove('open');
   document.getElementById('friend-name').value = '';
-  document.getElementById('friend-avatar').value = '';
-  document.getElementById('friend-bg').value = '';
+  document.getElementById('friend-avatar-file').value = '';
+  document.getElementById('friend-avatar-data').value = '';
+  document.getElementById('friend-avatar-preview').src = '';
+  document.getElementById('friend-avatar-preview').style.display = 'none';
+  document.getElementById('friend-bg-file').value = '';
+  document.getElementById('friend-bg-data').value = '';
+  document.getElementById('friend-bg-preview').src = '';
+  document.getElementById('friend-bg-preview').style.display = 'none';
   document.getElementById('friend-dna').value = '';
 }
 
@@ -2982,8 +3014,8 @@ function confirmAddFriend() {
   const id = 'f_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
   const data = {
     id: id, name: name,
-    avatar: document.getElementById('friend-avatar').value.trim(),
-    background: document.getElementById('friend-bg').value.trim(),
+    avatar: document.getElementById('friend-avatar-data').value || '',
+    background: document.getElementById('friend-bg-data').value || '',
     dna: dna, createdAt: new Date().toISOString()
   };
   saveFriendData(id, data);
