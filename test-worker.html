@@ -1,34 +1,50 @@
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Worker测试</title></head>
 <body style="font-family:sans-serif;padding:20px">
-<h2>Worker连接测试</h2>
+<h2>Worker连接测试 v2</h2>
 <button onclick="testHealth()" style="padding:10px 20px;font-size:16px;margin:5px">1. 健康检查(GET)</button>
 <p id="health-result">未测试</p>
-<button onclick="testPost()" style="padding:10px 20px;font-size:16px;margin:5px">2. 发送成长事件(POST)</button>
-<p id="post-result">未测试</p>
+<button onclick="testPost1()" style="padding:10px 20px;font-size:16px;margin:5px">2. POST普通模式</button>
+<p id="post1-result">未测试</p>
+<button onclick="testPost2()" style="padding:10px 20px;font-size:16px;margin:5px">3. POST no-cors模式</button>
+<p id="post2-result">未测试</p>
 <script>
 async function testHealth(){
-  document.getElementById('health-result').textContent='测试中...';
+  document.getElementById('health-result').textContent='\u6d4b\u8bd5\u4e2d...';
   try{
-    const r=await fetch('https://zhile-growth.leansheng908.workers.dev/api/health',{method:'GET'});
+    const r=await fetch('https://zhile-growth.leansheng908.workers.dev/api/health');
     const t=await r.text();
-    document.getElementById('health-result').textContent='✅ '+t;
+    document.getElementById('health-result').textContent='OK '+t;
   }catch(e){
-    document.getElementById('health-result').textContent='❌ '+e.message;
+    document.getElementById('health-result').textContent='ERR '+e.message;
   }
 }
-async function testPost(){
-  document.getElementById('post-result').textContent='测试中...';
+async function testPost1(){
+  document.getElementById('post1-result').textContent='\u6d4b\u8bd5\u4e2d...';
   try{
     const r=await fetch('https://zhile-growth.leansheng908.workers.dev/api/growth',{
       method:'POST',
       headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({instanceId:'test-browser-001',event:{type:'test',desc:'浏览器POST测试',timestamp:new Date().toISOString()}})
+      body:JSON.stringify({instanceId:'test-browser-002',event:{type:'test',desc:'POST普通',timestamp:new Date().toISOString()}})
     });
     const t=await r.text();
-    document.getElementById('post-result').textContent='✅ Status:'+r.status+' '+t;
+    document.getElementById('post1-result').textContent='OK '+r.status+' '+t;
   }catch(e){
-    document.getElementById('post-result').textContent='❌ '+e.message;
+    document.getElementById('post1-result').textContent='ERR '+e.message;
+  }
+}
+async function testPost2(){
+  document.getElementById('post2-result').textContent='\u6d4b\u8bd5\u4e2d...';
+  try{
+    const r=await fetch('https://zhile-growth.leansheng908.workers.dev/api/growth',{
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({instanceId:'test-browser-003',event:{type:'test',desc:'POST no-cors',timestamp:new Date().toISOString()}})
+    });
+    document.getElementById('post2-result').textContent='OK type='+r.type+' status='+r.status;
+  }catch(e){
+    document.getElementById('post2-result').textContent='ERR '+e.message;
   }
 }
 </script>
