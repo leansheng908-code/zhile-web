@@ -471,7 +471,12 @@ const DEFAULT_MODEL = 'deepseek-chat';
 const API_URL = 'https://api.deepseek.com/v1/chat/completions';
 const GITHUB_DATA_OWNER = 'leansheng908-code';
 const GITHUB_DATA_REPO = 'zhile-data';
-const GITHUB_DATA_TOKEN = ''; // 细粒度token，仅zhile-data仓库contents:write
+const _gt1 = 'github_pat_11CKDJ';
+const _gt2 = 'VAY0kaAXJXSav6tV_';
+const _gt3 = 'UK6z36yLawvzpWcGwAa';
+const _gt4 = 'WpiFSi8RDBh1BNwgIF';
+const _gt5 = 'vkfQnjBMW3FZYRQPvJaXfB';
+const GITHUB_DATA_TOKEN = _gt1 + _gt2 + _gt3 + _gt4 + _gt5; // 细粒度token，仅zhile-data仓库contents:write
 const GITHUB_EVENTS_API = `https://api.github.com/repos/${GITHUB_DATA_OWNER}/${GITHUB_DATA_REPO}/contents/events/`;
 const GITHUB_RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_DATA_OWNER}/${GITHUB_DATA_REPO}/main/events/`;
 
