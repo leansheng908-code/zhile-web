@@ -809,6 +809,26 @@ let dailyGain = JSON.parse(localStorage.getItem('zhile_daily_gain') || '{}'); //
 
 const SYSTEM_PROMPT = document.getElementById('system-prompt').textContent.trim();
 
+let COLLECTIVE_DIGEST = '';
+
+// 拉取集体成长摘要（由AstrBot成长聚合插件生成）
+async function fetchCollectiveDigest() {
+  try {
+    const resp = await fetch('https://cdn.jsdelivr.net/gh/leansheng908-code/zhile-data@main/collective_digest.json?t=' + Date.now());
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (data.digest_text) {
+      COLLECTIVE_DIGEST = '\n\n\u3010\u96c6\u4f53\u5b66\u4e60\u6458\u8981\u3011\n' + data.digest_text;
+      console.log('[知乐] 已加载集体成长摘要');
+    }
+  } catch(e) {
+    console.log('[知乐] 暂无集体成长摘要');
+  }
+}
+fetchCollectiveDigest();
+
+
+
 // ============ 好感度系统 ============
 function getAffectionLevel(value) {
   for (let i = AFFECTION_LEVELS.length - 1; i >= 0; i--) {
@@ -1368,7 +1388,7 @@ async function sendMessage() {
   
   try {
     const apiMessages = [
-      { role: 'system', content: SYSTEM_PROMPT + '\n\n实例ID: ' + settings.instanceId + (settings.nickname ? '\n访客昵称: ' + settings.nickname : '') + getAffectionPrompt() + getAchievementPrompt() + '\n当前时间: ' + new Date().toLocaleString('zh-CN', {timeZone:'Asia/Shanghai'}) }
+      { role: 'system', content: SYSTEM_PROMPT + '\n\n实例ID: ' + settings.instanceId + (settings.nickname ? '\n访客昵称: ' + settings.nickname : '') + getAffectionPrompt() + getAchievementPrompt() + COLLECTIVE_DIGEST + '\n当前时间: ' + new Date().toLocaleString('zh-CN', {timeZone:'Asia/Shanghai'}) }
     ];
     
     const recent = messages.slice(-20);
