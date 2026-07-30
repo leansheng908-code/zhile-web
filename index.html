@@ -195,6 +195,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .gc-member-item.selected{background:rgba(255,182,193,0.12)}
 .gc-member-check{width:20px;height:20px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .gc-member-item.selected .gc-member-check{background:var(--accent-color);border-color:var(--accent-color)}
+.gc-summary-list{flex:1;overflow-y:auto;padding:12px 16px}
+.gc-summary-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px;margin-bottom:12px;transition:background .2s}
+.gc-summary-card:active{background:rgba(255,255,255,0.07)}
+.gc-summary-card .sc-title{font-size:14px;color:var(--pink);font-weight:600;margin-bottom:6px}
+.gc-summary-card .sc-topic{font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:8px;font-style:italic}
+.gc-summary-card .sc-preview{font-size:13px;color:rgba(255,255,255,0.7);line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.gc-summary-card .sc-meta{display:flex;gap:12px;margin-top:10px;flex-wrap:wrap}
+.gc-summary-card .sc-btn{font-size:12px;padding:4px 10px;border-radius:6px;cursor:pointer;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7)}
+.gc-summary-card .sc-btn:active{background:rgba(255,255,255,0.12)}
+.gc-summary-card .sc-btn.sc-danger{color:#ff6b6b;border-color:rgba(255,107,107,0.3)}
+.gc-topic-reveal{padding:10px 16px;background:linear-gradient(135deg,rgba(255,182,193,0.12),rgba(74,158,255,0.08));border-bottom:1px solid rgba(255,255,255,0.06);font-size:13px;color:var(--pink);text-align:center}
+.gc-topic-reveal .gc-topic-label{font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:2px}
+.gc-summary-view{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg-color);z-index:101;display:none;flex-direction:column}
+.gc-summary-view.open{display:flex}
 .gc-topic-notice{padding:8px 16px;background:rgba(255,182,193,0.08);font-size:12px;color:rgba(255,255,255,0.5);text-align:center;border-bottom:1px solid rgba(255,255,255,0.04)}
 
 /* ===== 好友系统 P0 ===== */
@@ -259,6 +273,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
   <div style="border-bottom:1px solid rgba(255,255,255,0.06)">
+          <div class="group-chat-entry" onclick="viewGcSummaries()" style="border-bottom:none">
+            <span class="gc-icon">📋</span>
+            <span class="gc-name">群聊总结</span>
+            <span class="gc-members" id="gc-summary-count-side"></span>
+          </div>
+        </div>
+        <div style="border-bottom:1px solid rgba(255,255,255,0.06)">
           <div class="group-chat-entry" onclick="openGroupChatPanel()">
             <span class="gc-icon">💬</span>
             <span class="gc-name">群聊</span>
@@ -429,6 +450,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="gc-title" id="gc-title-text">群聊</div>
         <div class="gc-online" id="gc-online-text"></div>
         <button onclick="showGroupSettings()" style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:18px;cursor:pointer;padding:4px">⚙</button>
+        <button onclick="summarizeGroupChat()" style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:16px;cursor:pointer;padding:4px" title="总结今日群聊">📝</button>
       </div>
       <div id="gc-topic-area"></div>
       <div class="gc-msg-area" id="gc-messages"></div>
@@ -448,6 +470,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="btn btn-primary" style="flex:1" onclick="confirmCreateGroup()">创建</button>
       </div>
     </div>
+    <!-- GC Summary View -->
+    <div class="gc-summary-view" id="gc-summary-view">
+      <div class="gc-header">
+        <button class="btn-back" onclick="closeGcSummaryView()">‹</button>
+        <div class="gc-title">群聊总结</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.4)" id="gc-summary-count"></div>
+      </div>
+      <div class="gc-summary-list" id="gc-summary-list"></div>
+    </div>
+
+
 
     <div class="settings-modal" id="settings-modal">
   <div class="settings-content">
@@ -3097,7 +3130,7 @@ function clearChat() {
 }
 
 function exportData() {
-  const ZHILE_KEYS = ['zhile_settings','zhile_messages','zhile_growth','zhile_chat_count','zhile_achievements','zhile_emoji_collection','zhile_sticker_collection','zhile_ref_emojis','zhile_emoji_blacklist','zhile_login_dates','zhile_secret_langs','zhile_affection','zhile_affection_log','zhile_daily_gain','zhile_last_login','zhile_appearance','zhile_friends','zhile_disclaimer_accepted','zhile_diary','zhile_daily_greeted','zhile_moments','zhile_groups'];
+  const ZHILE_KEYS = ['zhile_settings','zhile_messages','zhile_growth','zhile_chat_count','zhile_achievements','zhile_emoji_collection','zhile_sticker_collection','zhile_ref_emojis','zhile_emoji_blacklist','zhile_login_dates','zhile_secret_langs','zhile_affection','zhile_affection_log','zhile_daily_gain','zhile_last_login','zhile_appearance','zhile_friends','zhile_disclaimer_accepted','zhile_diary','zhile_daily_greeted','zhile_moments','zhile_groups','zhile_gc_summaries'];
   const data = { _app: 'zhile-web', _version: '0.21', _exported: new Date().toISOString() };
   ZHILE_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v !== null) data[k] = v; });
   // 导出好友数据（动态key）
@@ -3817,6 +3850,8 @@ function saveGroups(){ localStorage.setItem('zhile_groups', JSON.stringify(zhile
 function updateGcSummary(){
   var el = document.getElementById('gc-summary');
   if(el){ el.textContent = zhile_groups.length > 0 ? zhile_groups.length + '个群' : ''; }
+  var sc = document.getElementById('gc-summary-count-side');
+  if(sc){ var sums = JSON.parse(localStorage.getItem('zhile_gc_summaries') || '[]'); sc.textContent = sums.length > 0 ? sums.length + '篇' : ''; }
 }
 
 function openGroupChatPanel(){
@@ -3912,6 +3947,12 @@ async function sendGroupMessage(){
   msgs.push({ role:'user', content:text, ts:Date.now() });
   localStorage.setItem('zhile_gc_' + currentGroupId, JSON.stringify(msgs));
   renderGroupMessages();
+  // 每日首次发言时生成隐藏话题
+  var today = new Date().toDateString();
+  var topicKey = 'zhile_gc_dailytopic_' + currentGroupId + '_' + today;
+  if(!localStorage.getItem(topicKey)){
+    generateDailyTopic(currentGroupId, text);
+  }
   var container = document.getElementById('gc-messages');
   var typingDiv = document.createElement('div');
   typingDiv.className = 'msg-bubble msg-other';
@@ -3937,7 +3978,12 @@ async function sendGroupMessage(){
       try { var d = JSON.parse(f.dna); desc = d.description || d.personality || d.system_prompt || ''; } catch(e) { desc = (f.dna || '').substring(0, 200); }
       return '【'+f.name+'】' + desc.substring(0, 300);
     }).join('\n');
-    var prompt = '你是一个群聊管理AI。以下是一个群聊场景：\n\n群成员: ' + memberInfo + '\n\n角色设定:\n' + dnaText + '\n\n最近对话:\n' + recentMsgs + '\n\n用户刚说了: ' + text + '\n\n请判断哪些角色(最多2个)会回复用户这句话，并生成它们的回复。\n返回JSON格式: {"replies":[{"character":"角色名","content":"回复内容"}]}\n注意: 回复要符合角色性格，自然口语化，每条不超过100字。只返回JSON不要其他内容。';
+    // 注入隐藏话题
+    var today = new Date().toDateString();
+    var hiddenTopic = localStorage.getItem('zhile_gc_dailytopic_' + currentGroupId + '_' + today);
+    var topicHint = hiddenTopic ? '\n当前讨论主题（角色自然地围绕此主题展开，不要生硬提及）: ' + hiddenTopic : '';
+    
+    var prompt = '你是一个群聊管理AI。以下是一个群聊场景：\n\n群成员: ' + memberInfo + '\n\n角色设定:\n' + dnaText + '\n\n最近对话:\n' + recentMsgs + topicHint + '\n\n用户刚说了: ' + text + '\n\n请判断哪些角色(最多2个)会回复用户这句话，并生成它们的回复。\n返回JSON格式: {"replies":[{"character":"角色名","content":"回复内容"}]}\n注意: 回复要符合角色性格，自然口语化，每条不超过100字。只返回JSON不要其他内容。';
     var settings = JSON.parse(localStorage.getItem('zhile_settings') || '{}');
     var apiKey = settings.apiKey || DEFAULT_API_KEY;
     var apiUrl = settings.apiUrl || API_URL;
@@ -3982,64 +4028,288 @@ async function sendGroupMessage(){
   }
 }
 
+// === 隐藏话题系统 ===
+function getDailyTopic(groupId){
+  var today = new Date().toDateString();
+  var key = 'zhile_gc_dailytopic_' + groupId + '_' + today;
+  var topic = localStorage.getItem(key);
+  if(topic) return topic;
+  return null; // 还没生成
+}
+
+async function generateDailyTopic(groupId, firstMessage){
+  var today = new Date().toDateString();
+  var key = 'zhile_gc_dailytopic_' + groupId + '_' + today;
+  // 已经有了就不重复生成
+  if(localStorage.getItem(key)) return localStorage.getItem(key);
+  
+  var group = zhile_groups.find(function(g){ return g.id === groupId; });
+  if(!group) return null;
+  
+  var memberNames = group.members.map(function(mid){
+    if(mid === 'zhile') return '知乐';
+    var f = zhile_friends.find(function(fr){ return fr.id === mid; });
+    return f ? f.name : '?';
+  }).join(', ');
+  
+  var hour = new Date().getHours();
+  var timeDesc = hour < 6 ? '深夜' : hour < 12 ? '上午' : hour < 18 ? '下午' : '晚上';
+  
+  var prompt = '你在为一个群聊生成今日讨论主题。群成员: ' + memberNames + '\n';
+  prompt += '现在是' + timeDesc + '。群聊的第一条消息是: "' + firstMessage + '"\n';
+  prompt += '请根据这条消息和群成员构成，生成一个简短的讨论主题（10-20字），让群成员可以围绕它展开讨论。\n';
+  prompt += '主题应该是日常闲聊性质，不要过于正式。\n';
+  prompt += '只返回主题文字，不要其他内容。';
+  
+  try {
+    var settings = JSON.parse(localStorage.getItem('zhile_settings') || '{}');
+    var response = await fetch(settings.apiUrl || API_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + (settings.apiKey || DEFAULT_API_KEY) },
+      body: JSON.stringify({ model: settings.model || DEFAULT_MODEL, messages:[{role:'user',content:prompt}], temperature:0.9, max_tokens:60 })
+    });
+    var data = await response.json();
+    var topic = data.choices[0].message.content.trim().replace(/^[""""'']|[""""'']$/g, '');
+    if(topic.length > 50) topic = topic.substring(0, 50);
+    localStorage.setItem(key, topic);
+    return topic;
+  } catch(err) {
+    return null;
+  }
+}
+
+// 检查是否需要生成每日话题（在openGroupChat时调用）
 function checkGroupTopic(){
+  // 不再自动生成话题，改为在用户首次发消息时生成
+  // 显示已总结的提示（如果有）
   var group = zhile_groups.find(function(g){ return g.id === currentGroupId; });
   if(!group) return;
   var today = new Date().toDateString();
-  if(localStorage.getItem('zhile_gc_topic_' + currentGroupId + '_' + today)) return;
-  var msgs = JSON.parse(localStorage.getItem('zhile_gc_' + currentGroupId) || '[]');
-  if(msgs.length < 3) return;
-  var lastTopicTs = parseInt(localStorage.getItem('zhile_gc_last_topic_' + currentGroupId) || '0');
-  if(Date.now() - lastTopicTs < 10800000) return;
-  if(Math.random() > 0.3) return;
-  generateGroupTopic(group);
+  var summarizedKey = 'zhile_gc_summarized_' + currentGroupId + '_' + today;
+  if(localStorage.getItem(summarizedKey)){
+    var topic = localStorage.getItem('zhile_gc_dailytopic_' + currentGroupId + '_' + today);
+    var reveal = document.getElementById('gc-topic-area');
+    if(reveal && topic){
+      reveal.innerHTML = '<div class="gc-topic-reveal"><div class="gc-topic-label">今日话题</div>' + escapeHtml(topic) + '</div>';
+    }
+  }
 }
 
-async function generateGroupTopic(group){
-  localStorage.setItem('zhile_gc_last_topic_' + group.id, Date.now().toString());
+// === 群聊总结系统 ===
+async function summarizeGroupChat(){
+  if(!currentGroupId) return;
+  var group = zhile_groups.find(function(g){ return g.id === currentGroupId; });
+  if(!group) return;
+  var msgs = JSON.parse(localStorage.getItem('zhile_gc_' + currentGroupId) || '[]');
+  if(msgs.length < 3){ showToast('消息太少，再多聊几句再总结吧'); return; }
+  
   var today = new Date().toDateString();
-  localStorage.setItem('zhile_gc_topic_' + group.id + '_' + today, '1');
+  var topic = localStorage.getItem('zhile_gc_dailytopic_' + currentGroupId + '_' + today) || '自由闲聊';
+  
+  // 显示总结中
   var notice = document.getElementById('gc-topic-area');
-  if(notice) notice.innerHTML = '<div class="gc-topic-notice">💭 有人想说什么...</div>';
+  if(notice) notice.innerHTML = '<div class="gc-topic-notice">📝 正在总结群聊...</div>';
+  
   try {
-    var msgs = JSON.parse(localStorage.getItem('zhile_gc_' + group.id) || '[]');
-    var recent = msgs.slice(-5).map(function(m){
-      var name = m.role === 'user' ? '用户' : (m.role === 'zhile' ? '知乐' : (zhile_friends.find(function(f){ return f.id === m.role; }) || {}).name || '?');
+    var chatText = msgs.map(function(m){
+      var name = m.role === 'user' ? '我' : (m.role === 'zhile' ? '知乐' : (zhile_friends.find(function(f){ return f.id === m.role; }) || {}).name || '?');
       return name + ': ' + m.content;
     }).join('\n');
-    var hour = new Date().getHours();
-    var timeDesc = hour < 6 ? '深夜' : hour < 12 ? '上午' : hour < 18 ? '下午' : '晚上';
+    
     var memberNames = group.members.map(function(mid){
       if(mid === 'zhile') return '知乐';
       var f = zhile_friends.find(function(fr){ return fr.id === mid; });
       return f ? f.name : '?';
     }).join(', ');
-    var prompt = '群聊场景。现在是' + timeDesc + '。群成员: ' + memberNames + '\n最近对话:\n' + (recent || '还没有什么对话') + '\n\n请从群成员中选一个角色，根据其性格发起一个新话题（闲聊/分享/提问等）。\n返回JSON: {"character":"角色名","content":"话题内容"}\n内容不超过80字，自然口语化。只返回JSON。';
+    
+    var prompt = '请将以下群聊记录总结成一段叙事化的故事（200-400字）。\n';
+    prompt += '今日话题: ' + topic + '\n';
+    prompt += '群成员: ' + memberNames + '\n\n';
+    prompt += '群聊记录:\n' + chatText + '\n\n';
+    prompt += '要求：\n1. 用第三人称叙事，像写故事一样\n2. 保留有趣的对话和互动\n3. 自然融入今日话题\n4. 结尾可以有一句感悟或总结\n5. 不要列出每条消息，要融合成流畅的叙述';
+    
     var settings = JSON.parse(localStorage.getItem('zhile_settings') || '{}');
     var response = await fetch(settings.apiUrl || API_URL, {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + (settings.apiKey || DEFAULT_API_KEY) },
-      body: JSON.stringify({ model: settings.model || DEFAULT_MODEL, messages:[{role:'user',content:prompt}], temperature:0.9, max_tokens:200 })
+      body: JSON.stringify({ model: settings.model || DEFAULT_MODEL, messages:[{role:'user',content:prompt}], temperature:0.8, max_tokens:600 })
     });
     var data = await response.json();
-    var reply = data.choices[0].message.content;
-    var jsonMatch = reply.match(/\{[\s\S]*\}/);
-    var parsed = JSON.parse(jsonMatch ? jsonMatch[0] : reply);
-    var charName = parsed.character || '知乐';
-    var charContent = parsed.content || '';
-    var memberId = 'zhile';
-    if(charName !== '知乐'){
-      var f = zhile_friends.find(function(fr){ return fr.name === charName; });
-      if(f) memberId = f.id;
-    }
+    var summary = data.choices[0].message.content.trim();
+    
     if(notice) notice.innerHTML = '';
-    var msgs2 = JSON.parse(localStorage.getItem('zhile_gc_' + group.id) || '[]');
-    msgs2.push({ role: memberId, content: charContent, ts: Date.now(), isTopic: true });
-    localStorage.setItem('zhile_gc_' + group.id, JSON.stringify(msgs2));
+    
+    // 揭示话题
+    var reveal = document.getElementById('gc-topic-area');
+    if(reveal){
+      reveal.innerHTML = '<div class="gc-topic-reveal"><div class="gc-topic-label">今日话题</div>' + escapeHtml(topic) + '</div>';
+    }
+    
+    // 保存总结
+    var summaries = JSON.parse(localStorage.getItem('zhile_gc_summaries') || '[]');
+    if(summaries.length >= 30){
+      summaries.shift(); // 删除最旧的
+    }
+    var summaryObj = {
+      id: 'gcs_' + Date.now(),
+      groupId: currentGroupId,
+      groupName: group.name,
+      topic: topic,
+      summary: summary,
+      memberNames: memberNames,
+      msgCount: msgs.length,
+      date: today,
+      createdTime: Date.now()
+    };
+    summaries.push(summaryObj);
+    localStorage.setItem('zhile_gc_summaries', JSON.stringify(summaries));
+    
+    // 标记今天已总结
+    localStorage.setItem('zhile_gc_summarized_' + currentGroupId + '_' + today, '1');
+    
+    // 清空当前群聊消息（已总结的归档）
+    localStorage.removeItem('zhile_gc_' + currentGroupId);
+    
+    showToast('总结已保存！话题: ' + topic);
     renderGroupMessages();
+    
+    // 弹出总结预览
+    setTimeout(function(){ viewGcSummaryDetail(summaryObj.id); }, 500);
+    
   } catch(err) {
     if(notice) notice.innerHTML = '';
+    showToast('总结失败，请检查API配置');
   }
+}
+
+function viewGcSummaries(){
+  closeSidebar();
+  document.getElementById('gc-summary-view').classList.add('open');
+  renderGcSummaryList();
+}
+
+function closeGcSummaryView(){
+  document.getElementById('gc-summary-view').classList.remove('open');
+}
+
+function renderGcSummaryList(){
+  var summaries = JSON.parse(localStorage.getItem('zhile_gc_summaries') || '[]');
+  var container = document.getElementById('gc-summary-list');
+  document.getElementById('gc-summary-count').textContent = summaries.length + '/30';
+  
+  if(summaries.length === 0){
+    container.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px 16px;font-size:14px">还没有群聊总结<br>在群聊中点击📝按钮即可总结</div>';
+    return;
+  }
+  
+  summaries.reverse(); // 最新的在前
+  container.innerHTML = '';
+  summaries.forEach(function(s){
+    var card = document.createElement('div');
+    card.className = 'gc-summary-card';
+    card.innerHTML = 
+      '<div class="sc-title">' + escapeHtml(s.groupName) + '</div>' +
+      '<div class="sc-topic">话题: ' + escapeHtml(s.topic) + '</div>' +
+      '<div class="sc-preview">' + escapeHtml(s.summary) + '</div>' +
+      '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px">' + s.date + ' · ' + s.msgCount + '条消息 · ' + s.memberNames + '</div>' +
+      '<div class="sc-meta">' +
+        '<span class="sc-btn" onclick="event.stopPropagation();viewGcSummaryDetail(\'' + s.id + '\')">📖查看</span>' +
+        '<span class="sc-btn" onclick="event.stopPropagation();exportGcSummary(\'' + s.id + '\')">📥导出</span>' +
+        '<span class="sc-btn" onclick="event.stopPropagation();syncGcToMemory(\'' + s.id + '\')">🔄同步记忆</span>' +
+        '<span class="sc-btn sc-danger" onclick="event.stopPropagation();deleteGcSummary(\'' + s.id + '\')">🗑删除</span>' +
+      '</div>';
+    card.onclick = function(){ viewGcSummaryDetail(s.id); };
+    container.appendChild(card);
+  });
+}
+
+function viewGcSummaryDetail(summaryId){
+  var summaries = JSON.parse(localStorage.getItem('zhile_gc_summaries') || '[]');
+  var s = summaries.find(function(x){ return x.id === summaryId; });
+  if(!s) return;
+  
+  // 创建全屏查看
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px';
+  overlay.id = 'gc-detail-overlay';
+  overlay.onclick = function(e){ if(e.target === overlay) overlay.remove(); };
+  
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#1a1a2e;border-radius:16px;padding:20px;max-width:400px;width:100%;max-height:80vh;overflow-y:auto';
+  box.innerHTML = 
+    '<h3 style="color:var(--pink);margin-bottom:8px">' + escapeHtml(s.groupName) + '</h3>' +
+    '<div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px">话题: ' + escapeHtml(s.topic) + '</div>' +
+    '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:14px">' + s.date + ' · ' + s.msgCount + '条消息</div>' +
+    '<div style="font-size:14px;color:rgba(255,255,255,0.85);line-height:1.7;white-space:pre-wrap">' + escapeHtml(s.summary) + '</div>' +
+    '<div style="display:flex;gap:8px;margin-top:18px">' +
+      '<button class="btn btn-secondary" style="flex:1" onclick="document.getElementById(\'gc-detail-overlay\').remove()">关闭</button>' +
+      '<button class="btn btn-primary" style="flex:1" onclick="exportGcSummary(\'' + s.id + '\')">📥导出</button>' +
+      '<button class="btn" style="flex:1;background:rgba(74,158,255,0.2);color:#4a9eff;border:1px solid rgba(74,158,255,0.3)" onclick="syncGcToMemory(\'' + s.id + '\')">🔄同步</button>' +
+    '</div>';
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
+function exportGcSummary(summaryId){
+  var summaries = JSON.parse(localStorage.getItem('zhile_gc_summaries') || '[]');
+  var s = summaries.find(function(x){ return x.id === summaryId; });
+  if(!s) return;
+  
+  var text = '群聊总结 - ' + s.groupName + '\n';
+  text += '日期: ' + s.date + '\n';
+  text += '话题: ' + s.topic + '\n';
+  text += '成员: ' + s.memberNames + '\n';
+  text += '消息数: ' + s.msgCount + '\n';
+  text += '─────────────────────\n\n';
+  text += s.summary + '\n';
+  
+  var blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '群聊总结_' + s.groupName + '_' + s.date.replace(/\s/g,'') + '.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('已导出');
+}
+
+function syncGcToMemory(summaryId){
+  var summaries = JSON.parse(localStorage.getItem('zhile_gc_summaries') || '[]');
+  var s = summaries.find(function(x){ return x.id === summaryId; });
+  if(!s) return;
+  
+  if(!confirm('将这条群聊总结同步到参与角色的记忆中？\n每个角色都会收到一条记忆消息。')){
+    return;
+  }
+  
+  // 为每个参与角色写入记忆消息
+  var group = zhile_groups.find(function(g){ return g.id === s.groupId; });
+  if(!group) return;
+  
+  group.members.forEach(function(mid){
+    if(mid === 'zhile') return; // 知乐的记忆由主系统管理，跳过
+    var chatKey = 'zhile_friend_chat_' + mid;
+    var chat = JSON.parse(localStorage.getItem(chatKey) || '[]');
+    chat.push({
+      role: 'system',
+      content: '[群聊记忆] 话题: ' + s.topic + ' | ' + s.summary.substring(0, 200),
+      ts: Date.now(),
+      isMemory: true
+    });
+    // 只保留最近200条
+    if(chat.length > 200) chat = chat.slice(-200);
+    localStorage.setItem(chatKey, JSON.stringify(chat));
+  });
+  
+  showToast('已同步到 ' + (group.members.length - 1) + ' 个角色的记忆');
+}
+
+function deleteGcSummary(summaryId){
+  if(!confirm('确定删除这条总结？')) return;
+  var summaries = JSON.parse(localStorage.getItem('zhile_gc_summaries') || '[]');
+  summaries = summaries.filter(function(s){ return s.id !== summaryId; });
+  localStorage.setItem('zhile_gc_summaries', JSON.stringify(summaries));
+  renderGcSummaryList();
+  showToast('已删除');
 }
 
 function openGcCreateModal(isEdit){
