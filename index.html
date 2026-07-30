@@ -195,6 +195,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .chat-delete{font-size:16px;color:#666;padding:4px;cursor:pointer}.chat-edit{margin-left:auto;cursor:pointer;color:#888;font-size:14px;padding:4px 8px;transition:color .2s}.chat-edit:hover{color:var(--pink)}
 .chat-delete:active{color:#e74c3c}
 
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -251,6 +252,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="sidebar-item" onclick="toggleSidebar();toggleDiaryPanel()">
     <span>📔</span><span>知乐日记</span>
+  </div>
+  <div class="sidebar-item" onclick="toggleSidebar();toggleMomentsPanel()">
+    <span>🌐</span><span>朋友圈</span>
   </div>
   <div class="sidebar-item" onclick="toggleSidebar();toggleGrowthPanel()">
     <span>📊</span><span>成长记录</span>
@@ -364,6 +368,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <button class="btn btn-primary" onclick="generateDiary()" style="flex:1">✍️ 写一篇</button>
     <button class="btn btn-secondary" onclick="clearDiary()" style="color:#e74c3c">清空</button>
   </div>
+</div>
+
+<div class="growth-panel" id="moments-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <h3 style="color:var(--pink)">🌐 朋友圈</h3>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-secondary" id="moments-refresh-btn" onclick="checkMomentsGeneration()" style="padding:4px 10px;font-size:12px">🔄 刷新</button>
+      <button class="btn btn-secondary" onclick="toggleMomentsPanel()" style="padding:4px 10px;font-size:12px">关闭</button>
+    </div>
+  </div>
+  <div id="moments-loading" style="display:none;text-align:center;padding:20px;color:#888;font-size:13px">
+    <div style="display:inline-block;animation:spin 1s linear infinite;width:20px;height:20px;border:2px solid var(--pink);border-top-color:transparent;border-radius:50%;margin-bottom:8px"></div>
+    <div>动态生成中...</div>
+  </div>
+  <div id="moments-list" style="max-height:65vh;overflow-y:auto"></div>
 </div>
 
 <div class="settings-modal" id="settings-modal">
@@ -2929,7 +2948,7 @@ function clearChat() {
 }
 
 function exportData() {
-  const ZHILE_KEYS = ['zhile_settings','zhile_messages','zhile_growth','zhile_chat_count','zhile_achievements','zhile_emoji_collection','zhile_sticker_collection','zhile_ref_emojis','zhile_emoji_blacklist','zhile_login_dates','zhile_secret_langs','zhile_affection','zhile_affection_log','zhile_daily_gain','zhile_last_login','zhile_appearance','zhile_friends','zhile_disclaimer_accepted','zhile_diary','zhile_daily_greeted'];
+  const ZHILE_KEYS = ['zhile_settings','zhile_messages','zhile_growth','zhile_chat_count','zhile_achievements','zhile_emoji_collection','zhile_sticker_collection','zhile_ref_emojis','zhile_emoji_blacklist','zhile_login_dates','zhile_secret_langs','zhile_affection','zhile_affection_log','zhile_daily_gain','zhile_last_login','zhile_appearance','zhile_friends','zhile_disclaimer_accepted','zhile_diary','zhile_daily_greeted','zhile_moments'];
   const data = { _app: 'zhile-web', _version: '0.21', _exported: new Date().toISOString() };
   ZHILE_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v !== null) data[k] = v; });
   // 导出好友数据（动态key）
@@ -3482,6 +3501,328 @@ function acceptDisclaimer() {
 // 启动
 init();
 setTimeout(checkGuide, 500);
+
+// ============ 朋友圈系统 ============
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function getFriendsList() {
+  return friends.map(function(id) { return getFriendData(id); }).filter(function(f) { return f; });
+}
+
+function getMoments() { return JSON.parse(localStorage.getItem('zhile_moments') || '[]'); }
+function saveMoments(m) {
+  if (m.length > 200) m = m.slice(-200);
+  localStorage.setItem('zhile_moments', JSON.stringify(m));
+}
+
+function toggleMomentsPanel() {
+  var panel = document.getElementById('moments-panel');
+  var diary = document.getElementById('diary-panel');
+  var growth = document.getElementById('growth-panel');
+  if (diary && diary.classList.contains('open')) diary.classList.remove('open');
+  if (growth && growth.classList.contains('open')) growth.classList.remove('open');
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open');
+  } else {
+    panel.classList.add('open');
+    renderMoments();
+    checkMomentsGeneration();
+  }
+}
+
+function formatMomentTime(ts) {
+  var d = new Date(ts);
+  var now = new Date();
+  var diff = now - d;
+  if (diff < 60000) return '刚刚';
+  if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+  var yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return '昨天 ' + d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+  return (d.getMonth()+1) + '月' + d.getDate() + '日 ' + d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+}
+
+function renderMoments() {
+  var list = document.getElementById('moments-list');
+  if (!list) return;
+  var moments = getMoments();
+  if (moments.length === 0) {
+    var fl = getFriendsList();
+    if (fl.length === 0) {
+      list.innerHTML = '<div style="color:#666;font-size:13px;text-align:center;padding:30px 20px">还没有动态～<br>添加好友后才会有朋友圈哦</div>';
+    } else {
+      list.innerHTML = '<div style="color:#666;font-size:13px;text-align:center;padding:30px 20px">还没有动态～<br>点「🔄 刷新」看看朋友们在做什么吧</div>';
+    }
+    return;
+  }
+  moments.sort(function(a, b) { return b.scenarioTime - a.scenarioTime; });
+  var htmlStr = '';
+  moments.forEach(function(m) {
+    var privateBadge = m.isPrivate ? ' <span style="font-size:10px;color:#999;background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px">🔒仅你可见</span>' : '';
+    var avatarHtml = m.authorAvatar
+      ? '<img src="' + m.authorAvatar + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover" onerror="this.style.display=\'none\';this.parentElement.textContent=\'🐱\'">'
+      : '<div style="width:36px;height:36px;border-radius:50%;background:var(--pink);display:flex;align-items:center;justify-content:center;font-size:16px">🐱</div>';
+    htmlStr += '<div style="background:rgba(255,183,197,.04);border-radius:14px;padding:14px;margin-bottom:12px">';
+    htmlStr += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
+    htmlStr += avatarHtml;
+    htmlStr += '<div><div style="color:#4a9eff;font-size:13px;font-weight:600">' + escapeHtml(m.authorName) + privateBadge + '</div>';
+    htmlStr += '<div style="color:#666;font-size:11px">' + formatMomentTime(m.scenarioTime) + '</div></div></div>';
+    htmlStr += '<div style="color:#ddd;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word">' + escapeHtml(m.content) + '</div>';
+    if (m.comments && m.comments.length > 0) {
+      htmlStr += '<div style="margin-top:10px;background:rgba(0,0,0,.15);border-radius:8px;padding:8px 10px">';
+      m.comments.forEach(function(c) {
+        var nameColor = c.authorIsZhile ? 'var(--pink)' : '#4a9eff';
+        var prefix = '';
+        if (c.replyTo) {
+          var replied = m.comments.find(function(x) { return x.id === c.replyTo; });
+          if (replied) prefix = '<span style="color:#888">回复 </span><span style="color:#4a9eff;font-weight:600">' + escapeHtml(replied.authorName) + '</span>';
+        }
+        htmlStr += '<div style="font-size:12px;line-height:1.6;margin-bottom:3px">';
+        htmlStr += '<span style="color:' + nameColor + ';font-weight:600">' + escapeHtml(c.authorName) + '</span>';
+        if (prefix) htmlStr += ' ' + prefix;
+        htmlStr += '<span style="color:#888">：</span><span style="color:#ccc">' + escapeHtml(c.content) + '</span>';
+        htmlStr += '</div>';
+      });
+      htmlStr += '</div>';
+    }
+    htmlStr += '<div style="display:flex;gap:16px;margin-top:8px">';
+    htmlStr += '<span style="font-size:13px;cursor:pointer" onclick="toggleLike(\'' + m.id + '\')">' + (m.liked ? '❤️' : '🤍') + '</span>';
+    htmlStr += '<span style="font-size:13px;color:#888;cursor:pointer" onclick="showCommentInput(\'' + m.id + '\')">💬</span>';
+    htmlStr += '</div>';
+    htmlStr += '<div id="comment-input-' + m.id + '" style="display:none;margin-top:8px">';
+    htmlStr += '<input type="text" id="comment-text-' + m.id + '" placeholder="说点什么...（@好友名可触发回复）" style="width:100%;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.2);color:#fff;font-size:13px;box-sizing:border-box">';
+    htmlStr += '<div style="display:flex;gap:6px;margin-top:6px">';
+    htmlStr += '<button class="btn btn-primary" style="flex:1;padding:4px;font-size:12px" onclick="submitComment(\'' + m.id + '\')">发送</button>';
+    htmlStr += '<button class="btn btn-secondary" style="padding:4px 10px;font-size:12px" onclick="document.getElementById(\'comment-input-' + m.id + '\').style.display=\'none\'">取消</button>';
+    htmlStr += '</div></div></div>';
+  });
+  list.innerHTML = htmlStr;
+}
+
+function toggleLike(momentId) {
+  var moments = getMoments();
+  var m = moments.find(function(x) { return x.id === momentId; });
+  if (m) { m.liked = !m.liked; saveMoments(moments); renderMoments(); }
+}
+
+function showCommentInput(momentId) {
+  var el = document.getElementById('comment-input-' + momentId);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  if (el.style.display === 'block') {
+    setTimeout(function() { document.getElementById('comment-text-' + momentId).focus(); }, 100);
+  }
+}
+
+async function submitComment(momentId) {
+  var input = document.getElementById('comment-text-' + momentId);
+  var text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  var moments = getMoments();
+  var m = moments.find(function(x) { return x.id === momentId; });
+  if (!m) return;
+  m.comments = m.comments || [];
+  var comment = {
+    id: 'cmt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+    authorName: '我',
+    authorIsZhile: false,
+    content: text,
+    ts: Date.now(),
+    replyTo: null,
+    needReply: true,
+    replyGenerated: false
+  };
+  m.comments.push(comment);
+  saveMoments(moments);
+  renderMoments();
+  // 检查@提及
+  if (text.indexOf('@知乐') >= 0) {
+    await generateReply(momentId, comment.id, 'zhile');
+    return;
+  }
+  var fl = getFriendsList();
+  for (var i = 0; i < fl.length; i++) {
+    if (text.indexOf('@' + fl[i].name) >= 0) {
+      await generateReply(momentId, comment.id, fl[i].id);
+      return;
+    }
+  }
+}
+
+async function checkMomentsGeneration() {
+  var fl = getFriendsList();
+  if (fl.length === 0) {
+    renderMoments();
+    return;
+  }
+  var loading = document.getElementById('moments-loading');
+  var refreshBtn = document.getElementById('moments-refresh-btn');
+  if (loading) loading.style.display = 'block';
+  if (refreshBtn) { refreshBtn.disabled = true; refreshBtn.textContent = '⏳ 生成中'; }
+  try {
+    var moments = getMoments();
+    var now = Date.now();
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var todayStart = today.getTime();
+    var todayMoments = moments.filter(function(m) { return m.createdTime >= todayStart; });
+    var lastTime = moments.length > 0 ? Math.max.apply(null, moments.map(function(m) { return m.createdTime; })) : 0;
+    // 生成新动态
+    if (todayMoments.length < 3 && now - lastTime > 3 * 3600000) {
+      await generateMoment(fl, moments);
+    }
+    // 隔天回复
+    await checkPendingReplies();
+    // 知乐自动评论
+    await checkAutoComment('zhile');
+    // 好友互评
+    await checkAutoComment('friend');
+  } catch(e) {
+    console.error('checkMomentsGeneration error:', e);
+  } finally {
+    if (loading) loading.style.display = 'none';
+    if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.textContent = '🔄 刷新'; }
+    renderMoments();
+  }
+}
+
+async function generateMoment(fl, moments) {
+  var recentAuthors = moments.filter(function(m) { return m.createdTime > Date.now() - 86400000; }).map(function(m) { return m.authorId; });
+  var candidates = fl.filter(function(f) { return recentAuthors.indexOf(f.id) < 0; });
+  if (candidates.length === 0) candidates = fl;
+  var author = candidates[Math.floor(Math.random() * candidates.length)];
+  var scenarioTime = Date.now() - Math.floor((30 + Math.random() * 150) * 60000);
+  try {
+    var dnaSnippet = author.dna ? author.dna.substring(0, 2000) : '一个有趣的角色';
+    var prompt = '你现在是「' + author.name + '」，请根据以下角色设定，发一条朋友圈动态（30-120字）。\n\n角色设定：\n' + dnaSnippet + '\n\n要求：\n1. 内容自然，像真人在发朋友圈\n2. 可以是日常感悟、吐槽、分享、碎碎念等\n3. 不要太长\n4. 只输出动态内容本身，不要加引号、前缀或解释';
+    var apiUrl = settings.apiUrl || API_URL;
+    var resp = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + settings.apiKey },
+      body: JSON.stringify({ model: settings.model, messages: [{ role: 'user', content: prompt }], temperature: 0.9, max_tokens: 200 })
+    });
+    if (!resp.ok) return;
+    var data = await resp.json();
+    var content = data.choices[0].message.content.trim();
+    var moment = {
+      id: 'moment_' + Date.now(),
+      authorId: author.id,
+      authorName: author.name,
+      authorAvatar: author.avatar || '',
+      content: content,
+      scenarioTime: scenarioTime,
+      createdTime: Date.now(),
+      isPrivate: false,
+      liked: false,
+      comments: []
+    };
+    moments.push(moment);
+    saveMoments(moments);
+  } catch(e) { console.error('generateMoment error:', e); }
+}
+
+async function checkAutoComment(type) {
+  var moments = getMoments();
+  var fl = getFriendsList();
+  var changed = false;
+  for (var mi = 0; mi < moments.length; mi++) {
+    var m = moments[mi];
+    if (!m.comments) m.comments = [];
+    if (type === 'zhile') {
+      if (m.authorId === 'zhile') continue;
+      var hasZhile = m.comments.some(function(c) { return c.authorIsZhile; });
+      if (!hasZhile && Math.random() < 0.4) {
+        var content = await callCommentAPI('知乐', '你是知乐，银发猫耳少女，性格甜糯软萌有主见。你看到好友「' + m.authorName + '」发了朋友圈：\n"' + m.content + '"\n\n请评论一句（5-25字），符合你的性格，可以撒娇、调侃或关心。只输出评论内容。');
+        if (content) {
+          m.comments.push({ id: 'cmt_' + Date.now() + '_' + Math.random().toString(36).substr(2,5), authorName: '知乐', authorIsZhile: true, content: content, ts: Date.now() + 60000, replyTo: null, needReply: false, replyGenerated: false });
+          changed = true;
+        }
+      }
+    } else if (type === 'friend' && fl.length >= 2) {
+      var commented = m.comments.map(function(c) { return c.authorName; });
+      var others = fl.filter(function(f) { return f.id !== m.authorId && commented.indexOf(f.name) < 0; });
+      if (others.length > 0 && Math.random() < 0.3) {
+        var commenter = others[Math.floor(Math.random() * others.length)];
+        var dnaSnippet = commenter.dna ? commenter.dna.substring(0, 1500) : '一个角色';
+        var content2 = await callCommentAPI(commenter.name, '你是「' + commenter.name + '」，角色设定：\n' + dnaSnippet + '\n\n你看到「' + m.authorName + '」发了朋友圈：\n"' + m.content + '"\n\n请评论一句（5-25字），符合你的角色性格。只输出评论内容。');
+        if (content2) {
+          m.comments.push({ id: 'cmt_' + Date.now() + '_' + Math.random().toString(36).substr(2,5), authorName: commenter.name, authorIsZhile: false, content: content2, ts: Date.now() + 120000, replyTo: null, needReply: true, replyGenerated: false });
+          changed = true;
+        }
+      }
+    }
+  }
+  if (changed) saveMoments(moments);
+}
+
+async function checkPendingReplies() {
+  var moments = getMoments();
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
+  var todayStart = today.getTime();
+  var changed = false;
+  for (var mi = 0; mi < moments.length; mi++) {
+    var m = moments[mi];
+    if (!m.comments) continue;
+    for (var ci = 0; ci < m.comments.length; ci++) {
+      var c = m.comments[ci];
+      if (c.needReply && !c.replyGenerated && c.ts < todayStart) {
+        var author = getFriendData(m.authorId);
+        if (author) {
+          var dnaSnippet = author.dna ? author.dna.substring(0, 1500) : '一个角色';
+          var content = await callCommentAPI(author.name, '你是「' + author.name + '」，角色设定：\n' + dnaSnippet + '\n\n你发了一条朋友圈：\n"' + m.content + '"\n\n「' + c.authorName + '」评论了："' + c.content + '"\n\n请回复这条评论（5-25字），符合你的角色性格。只输出回复内容。');
+          if (content) {
+            m.comments.push({ id: 'cmt_' + Date.now() + '_' + Math.random().toString(36).substr(2,5), authorName: m.authorName, authorIsZhile: false, content: content, ts: Date.now(), replyTo: c.id, needReply: false, replyGenerated: false });
+            c.replyGenerated = true;
+            changed = true;
+          }
+        }
+      }
+    }
+  }
+  if (changed) saveMoments(moments);
+}
+
+async function generateReply(momentId, commentId, replierId) {
+  var moments = getMoments();
+  var m = moments.find(function(x) { return x.id === momentId; });
+  if (!m) return;
+  var c = m.comments.find(function(x) { return x.id === commentId; });
+  if (!c) return;
+  var name, dna, isZhile;
+  if (replierId === 'zhile') {
+    name = '知乐'; dna = '银发猫耳少女，甜糯软萌有主见'; isZhile = true;
+  } else {
+    var f = getFriendData(replierId);
+    if (!f) return;
+    name = f.name; dna = f.dna ? f.dna.substring(0, 1500) : '一个角色'; isZhile = false;
+  }
+  var content = await callCommentAPI(name, '你是「' + name + '」，角色设定：\n' + dna + '\n\n用户在朋友圈@了你并说了："' + c.content + '"\n\n请回复（5-25字），符合你的角色性格。只输出回复内容。');
+  if (content) {
+    m.comments.push({ id: 'cmt_' + Date.now() + '_' + Math.random().toString(36).substr(2,5), authorName: name, authorIsZhile: isZhile, content: content, ts: Date.now(), replyTo: commentId, needReply: false, replyGenerated: false });
+    saveMoments(moments);
+    renderMoments();
+  }
+}
+
+async function callCommentAPI(name, prompt) {
+  try {
+    var apiUrl = settings.apiUrl || API_URL;
+    var resp = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + settings.apiKey },
+      body: JSON.stringify({ model: settings.model, messages: [{ role: 'user', content: prompt }], temperature: 0.9, max_tokens: 100 })
+    });
+    if (!resp.ok) return null;
+    var data = await resp.json();
+    return data.choices[0].message.content.trim();
+  } catch(e) { return null; }
+}
+
 </script>
 
 </body>
