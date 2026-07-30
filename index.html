@@ -90,7 +90,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sub-btn{padding:5px 10px;border:none;border-radius:8px;background:rgba(255,255,255,.04);color:#777;font-size:11px;cursor:pointer;transition:all .2s}
 .sub-btn.active{background:rgba(255,183,197,.1);color:var(--pink)}
 .tab-content{display:none}
-.tab-content.active{display:block}
+.tab-content.active{display:block;animation:tabSlide .2s ease-out}
+@keyframes tabSlide{from{opacity:.4;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
 /* Achievement cards */
 .achievement-grid{display:flex;flex-direction:column;gap:6px}
 .ach-card{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;background:rgba(255,255,255,.03);transition:all .3s}
@@ -1482,6 +1483,62 @@ function toggleGrowthPanel() {
     }
     panel.style.transform = '';
     pDist = 0;
+  }, { passive: true });
+})();
+
+// Swipe left/right to switch tabs within current category
+(function() {
+  const panel = document.getElementById('growth-panel');
+  const TAB_ORDER = {
+    growth: ['growth', 'emoji', 'ach', 'timeline'],
+    emotion: ['starmap', 'tide', 'flower']
+  };
+  let sX = 0, sY = 0, sTime = 0, sTracking = false;
+
+  panel.addEventListener('touchstart', function(e) {
+    if (!panel.classList.contains('open')) return;
+    // Don't track if touching a button, input, or canvas (let them handle their own touches)
+    const tag = e.target.tagName.toLowerCase();
+    if (tag === 'button' || tag === 'input' || tag === 'textarea') { sTracking = false; return; }
+    sX = e.touches[0].clientX;
+    sY = e.touches[0].clientY;
+    sTime = Date.now();
+    sTracking = true;
+  }, { passive: true });
+
+  panel.addEventListener('touchend', function(e) {
+    if (!sTracking) return;
+    sTracking = false;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - sX;
+    const dy = t.clientY - sY;
+    const dt = Date.now() - sTime;
+    // Horizontal dominant swipe, >50px, fast enough (<500ms), horizontal > 1.5x vertical
+    if (Math.abs(dx) < 50 || dt > 500 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+
+    // Determine current category
+    let currentCat = 'growth';
+    if (document.getElementById('sub-btns-emotion').style.display !== 'none') currentCat = 'emotion';
+    const tabs = TAB_ORDER[currentCat];
+    if (!tabs || tabs.length < 2) return;
+
+    // Find current active tab
+    let activeTab = null;
+    document.querySelectorAll('.tab-content').forEach(c => {
+      if (c.classList.contains('active')) activeTab = c.id.replace('tab-', '');
+    });
+    if (!activeTab) return;
+    let idx = tabs.indexOf(activeTab);
+    if (idx < 0) return;
+
+    // Swipe left = next, swipe right = previous
+    if (dx < 0 && idx < tabs.length - 1) idx++;
+    else if (dx > 0 && idx > 0) idx--;
+    else return;
+
+    // Click the corresponding sub-btn
+    const btns = document.querySelectorAll('#sub-btns-' + currentCat + ' .sub-btn');
+    if (btns[idx]) btns[idx].click();
   }, { passive: true });
 })();
 
