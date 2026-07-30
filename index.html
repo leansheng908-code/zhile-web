@@ -294,6 +294,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="affection-bar-fill" id="aff-bar" style="width:0%"></div>
     </div>
   </div>
+  <button id="live2d-btn" onclick="toggleLive2d()" style="background:rgba(255,183,197,.1);border:none;font-size:18px;padding:6px 8px;border-radius:8px;cursor:pointer;flex-shrink:0">🎭</button>
+  <button onclick="toggleSettings()" style="background:rgba(255,183,197,.1);border:none;font-size:18px;padding:6px 8px;border-radius:8px;cursor:pointer;flex-shrink:0">⚙️</button>
 </div>
 
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div><div class="sidebar" id="sidebar">
@@ -1149,7 +1151,7 @@ function init() {
   // Restore live2d state
   if (localStorage.getItem('zhile_live2d') === 'on') {
     document.getElementById('live2d-wrap').classList.add('show');
-    document.getElementById('live2d-btn').style.background = 'rgba(255,183,197,.25)';
+    var _lb=document.getElementById('live2d-btn'); if(_lb) _lb.style.background='rgba(255,183,197,.25)';
   }
   // Apply appearance settings
   applyAppearance();
@@ -3115,12 +3117,12 @@ function toggleLive2d() {
   const btn = document.getElementById('live2d-btn');
   if (wrap.classList.contains('show')) {
     wrap.classList.remove('show');
-    btn.style.background = 'rgba(255,183,197,.1)';
+    if(btn) btn.style.background = 'rgba(255,183,197,.1)';
     localStorage.setItem('zhile_live2d', 'off');
     
   } else {
     wrap.classList.add('show');
-    btn.style.background = 'rgba(255,183,197,.25)';
+    if(btn) btn.style.background = 'rgba(255,183,197,.25)';
     localStorage.setItem('zhile_live2d', 'on');
     
   }
@@ -3490,7 +3492,7 @@ function switchChat(target) {
     headerName.textContent = '知乐';
     headerStatus.textContent = '在线';
     headerAvatar.src = 'https://zhile-web-1460393151.cos.ap-guangzhou.myqcloud.com/avatar/zhile_pixel.png?v=1';
-    live2dBtn.style.display = '';
+    if(live2dBtn) live2dBtn.style.display = '';
     affDisplay.style.display = '';
     document.body.style.backgroundImage = '';
     messages.forEach(m => {
@@ -3505,7 +3507,7 @@ function switchChat(target) {
     headerStatus.textContent = '在线';
     if (f.avatar) headerAvatar.src = f.avatar;
     else headerAvatar.src = 'https://zhile-web-1460393151.cos.ap-guangzhou.myqcloud.com/avatar/zhile_pixel.png?v=1';
-    live2dBtn.style.display = 'none';
+    if(live2dBtn) live2dBtn.style.display = 'none';
     affDisplay.style.display = 'none';
     if (live2dWrap.classList.contains('show')) live2dWrap.classList.remove('show');
     if (f.background) document.body.style.backgroundImage = 'url(' + f.background + ')';
