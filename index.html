@@ -1255,6 +1255,16 @@ function addLongPressCopy(el) {
   el.addEventListener('touchend', function() { if (timer) { clearTimeout(timer); timer = null; } });
 }
 
+function showToast(msg){
+  var old = document.querySelector('.copy-toast');
+  if(old) old.remove();
+  var t = document.createElement('div');
+  t.className = 'copy-toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 2000);
+}
+
 function showCopyToast() {
   const old = document.querySelector('.copy-toast');
   if (old) old.remove();
@@ -3009,6 +3019,13 @@ function handleFlowerClick(e) {
 }
 
 // ============ 设置 ============
+function closeSidebar(){
+  var sb = document.getElementById('sidebar');
+  var ov = document.getElementById('sidebar-overlay');
+  sb.classList.remove('open');
+  ov.classList.remove('show');
+}
+
 function toggleSidebar() {
   const sb = document.getElementById('sidebar');
   const ov = document.getElementById('sidebar-overlay');
