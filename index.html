@@ -3093,10 +3093,49 @@ function loadDnaFile(input) {
   }
   var reader = new FileReader();
   reader.onload = function(e) {
-    var text = e.target.result;
-    var textarea = document.getElementById('friend-dna');
-    textarea.value = text;
-    document.getElementById('friend-dna-file-name').textContent = '✓ ' + file.name;
+    var raw = e.target.result;
+    var text = raw;
+    var isCard = false;
+    // 尝试JSON解析（人物卡）
+    try {
+      var obj = JSON.parse(raw);
+      // SillyTavern v2: 数据在data字段里
+      var d = obj.data || obj;
+      var parts = [];
+      if (d.name) {
+        parts.push('角色名：' + d.name);
+        // 顺便自动填名字
+        var nameInput = document.getElementById('friend-name');
+        if (nameInput && !nameInput.value.trim()) nameInput.value = d.name;
+        isCard = true;
+      }
+      if (d.description) { parts.push('【角色描述】\n' + d.description); isCard = true; }
+      if (d.personality) { parts.push('【性格特征】\n' + d.personality); isCard = true; }
+      if (d.scenario) { parts.push('【场景设定】\n' + d.scenario); isCard = true; }
+      if (d.system_prompt) { parts.push('【系统提示词】\n' + d.system_prompt); isCard = true; }
+      if (d.post_history_instructions) { parts.push('【后置指令】\n' + d.post_history_instructions); isCard = true; }
+      if (d.mes_example) { parts.push('【对话示例】\n' + d.mes_example); isCard = true; }
+      if (d.first_mes) { parts.push('【开场白】\n' + d.first_mes); isCard = true; }
+      // 如果有creator_notes或tags也加上
+      if (d.tags && d.tags.length) { parts.push('【标签】' + d.tags.join('、')); isCard = true; }
+      // 如果有alternate_greetings
+      if (d.alternate_greetings && d.alternate_greetings.length) {
+        parts.push('【备选开场白】\n' + d.alternate_greetings.join('\n---\n'));
+        isCard = true;
+      }
+      // 通用JSON：直接有dna/system_prompt/description字段
+      if (!isCard && (obj.dna || obj.system_prompt || obj.description)) {
+        text = obj.dna || obj.system_prompt || obj.description;
+        isCard = true;
+      } else if (isCard) {
+        text = parts.join('\n\n');
+      }
+    } catch(err) {
+      // 不是JSON，当纯文本用
+    }
+    document.getElementById('friend-dna').value = text;
+    var label = isCard ? '✓ 人物卡已解析: ' : '✓ ';
+    document.getElementById('friend-dna-file-name').textContent = label + file.name;
   };
   reader.onerror = function() {
     alert('读取文件失败，请重试');
