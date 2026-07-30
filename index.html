@@ -430,14 +430,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </div>
       </div>
       <div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px;margin-bottom:8px">
-        <div style="font-size:13px;color:#4a9eff;font-weight:700">Google Gemini 🌐 <span style="font-size:11px;color:#faad14">需梯子</span></div>
-        <div style="font-size:12px;color:#aaa;margin-top:2px">Gemini 2.5 Flash · 1500次/天 · 多模态</div>
+        <div style="font-size:13px;color:#4a9eff;font-weight:700">Google Gemini 🌐 <span style="font-size:11px;color:#faad14">需梯子</span> <span style="font-size:11px;color:#ff4d4f;font-weight:700">⚠️ 浏览器不可用</span></div>
+        <div style="font-size:12px;color:#aaa;margin-top:2px">Gemini 2.5 Flash · 1500次/天 · 多模态 · CORS限制浏览器无法调用</div>
         <div style="display:flex;gap:6px;margin-top:8px">
           <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px" onclick="showApiGuide('gemini')">📖 获取流程</button>
           <button class="btn btn-primary" style="padding:4px 10px;font-size:12px" onclick="quickFillAPI('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions','gemini-2.5-flash')">⚡一键填入</button>
         </div>
       </div>
-      <div style="font-size:11px;color:#666;margin-top:8px;line-height:1.5">💡 国内用户首选硅基流动；有梯子推荐OpenRouter或Groq。一键填入后仍需手动填写API Key。</div>
+      <div style="font-size:11px;color:#666;margin-top:8px;line-height:1.5">💡 国内用户首选硅基流动；有梯子推荐OpenRouter或Groq。Gemini因CORS限制无法在浏览器中直接调用，仅作了解。一键填入后仍需手动填写API Key。</div>
     </div>
     <label>API Key（DeepSeek）</label>
     <input type="password" id="setting-apikey" placeholder="sk-xxx">
@@ -4022,7 +4022,7 @@ function showApiGuide(provider) {
       ]
     },
     gemini: {
-      title: 'Google Gemini 获取流程（需梯子）',
+      title: 'Google Gemini 获取流程（需梯子·⚠️浏览器不可用）',
       steps: [
         '打开 aistudio.google.com（需要科学上网）',
         '用 Google 账号登录（没有就注册一个，30秒搞定）',
@@ -4032,6 +4032,7 @@ function showApiGuide(provider) {
         '回到知乐网页，点上方「⚡一键填入」',
         '将密钥粘贴到 API Key 输入框',
         '点「🔌 测试连接」确认可用，保存即可',
+        '⚠️ 注意：Gemini API存在CORS限制，无法在浏览器中直接调用，仅供了解。',
         '免费层：Gemini 2.5 Flash 每天1500次请求（最慷慨的免费额度之一）',
         '注意：免费层的数据可能被Google用于模型训练，请勿发送敏感信息'
       ]
