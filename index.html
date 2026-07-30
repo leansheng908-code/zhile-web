@@ -1484,7 +1484,7 @@ async function reportGrowthToRemote(event) {
   try {
     const res = await fetch(GROWTH_PROXY_URL + '/api/growth', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ instanceId: settings.instanceId, event: event })
     });
     if (res.ok) {
