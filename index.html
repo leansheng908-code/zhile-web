@@ -172,12 +172,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 @keyframes heartFloat{0%{opacity:1;transform:scale(.3)}30%{transform:scale(1.2)}100%{opacity:0;transform:scale(1) translateY(-50px)}}
 .msg{position:relative;-webkit-user-select:text;user-select:text;-webkit-touch-callout:none}
 
+
+/* ===== 好友系统 P0 ===== */
+.disclaimer-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.9);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px}
+.disclaimer-box{background:var(--card);border-radius:16px;padding:24px;max-width:340px;max-height:80vh;overflow-y:auto;font-size:13px;line-height:1.6}
+.disclaimer-box h3{text-align:center;margin-bottom:12px;color:var(--pink)}
+.disclaimer-box ul{padding-left:16px;margin:12px 0}
+.disclaimer-box li{margin-bottom:6px;color:#ccc}
+.disclaimer-btns{display:flex;gap:8px;margin-top:16px}
+.friend-modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
+.friend-modal.open{display:flex}
+.friend-modal-box{background:var(--card);border-radius:16px;padding:20px;max-width:340px;width:100%;max-height:85vh;overflow-y:auto}
+.friend-modal-box label{font-size:12px;color:#999;margin-top:10px;display:block}
+.friend-modal-box input,.friend-modal-box textarea{width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px;color:var(--text);font-size:13px;box-sizing:border-box}
+.chat-list-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;transition:background .15s;position:relative}
+.chat-list-item:active{background:rgba(255,255,255,.05)}
+.chat-list-item.active{background:rgba(255,107,157,.12)}
+.chat-list-item.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--pink);border-radius:0 2px 2px 0}
+.chat-avatar-sm{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden;flex-shrink:0}
+.chat-avatar-sm img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.chat-name{font-size:14px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-delete{font-size:16px;color:#666;padding:4px;cursor:pointer}
+.chat-delete:active{color:#e74c3c}
+
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="avatar" onclick="toggleSidebar()"><img src="https://zhile-web-1460393151.cos.ap-guangzhou.myqcloud.com/avatar/zhile_pixel.png?v=1" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>
+  <div class="avatar" onclick="toggleSidebar()"><img id="header-avatar-img" src="https://zhile-web-1460393151.cos.ap-guangzhou.myqcloud.com/avatar/zhile_pixel.png?v=1" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>
   <div class="header-info" onclick="toggleGrowthPanel()" style="cursor:pointer">
     <div class="header-name">知乐</div>
     <div class="header-status" id="status">在线</div>
@@ -202,6 +225,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="sidebar-avatar"><img src="https://zhile-web-1460393151.cos.ap-guangzhou.myqcloud.com/avatar/zhile_pixel.png?v=1" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>
     <div class="sidebar-name">知乐</div>
     <div class="sidebar-id" id="sidebar-uid">web-xxx</div>
+  </div>
+  <div class="sidebar-section">聊天</div>
+  <div id="chat-list-container">
+    <div class="chat-list-item active" id="chat-zhile" onclick="switchChat('zhile')">
+      <div class="chat-avatar-sm"><img src="https://zhile-web-1460393151.cos.ap-guangzhou.myqcloud.com/avatar/zhile_pixel.png?v=1" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>
+      <span class="chat-name">知乐</span>
+    </div>
+  </div>
+  <div class="sidebar-item" onclick="toggleSidebar();showAddFriend()">
+    <span>➕</span><span>添加好友</span>
   </div>
   <div class="sidebar-section">数据</div>
   <div class="sidebar-item" onclick="exportData();toggleSidebar()">
@@ -322,6 +355,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <input type="password" id="setting-apikey" placeholder="sk-xxx">
     <label>模型</label>
     <input type="text" id="setting-model" placeholder="deepseek-chat">
+    <label>API地址（留空=默认DeepSeek，可换其他兼容API）</label>
+    <input type="text" id="setting-api-url" placeholder="https://api.deepseek.com/v1/chat/completions">
     <label>实例ID（用于成长上报）</label>
     <input type="text" id="setting-instance-id" placeholder="web-xxx">
     <label>你的昵称（可选，让知乐记住你）</label>
@@ -344,6 +379,44 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="btn btn-secondary" onclick="toggleSettings()">取消</button>
       <button class="btn btn-secondary" onclick="resetAppearance()" style="color:#e0a040">重置外观</button>
       <button class="btn btn-secondary" onclick="clearChat()" style="margin-left:auto;color:#e74c3c">清空对话</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="disclaimer-overlay" id="disclaimer-overlay">
+  <div class="disclaimer-box">
+    <h3>⚠️ 免责声明</h3>
+    <p>欢迎使用知乐网页版！使用前请阅读以下声明：</p>
+    <ul>
+      <li>本网站所有AI角色均为虚拟角色，内容由AI模型生成，不代表开发者立场或观点。</li>
+      <li>用户使用本网站产生的任何内容（包括对话文本、角色设定）由用户自行负责。</li>
+      <li>请遵守当地法律法规，禁止生成违法违规或侵犯他人权益的内容。</li>
+      <li>用户自定义的好友角色DNA由用户提供，开发者不对其内容进行审核或担保。</li>
+      <li>本网站API可能有使用限制，不保证服务持续可用。</li>
+      <li>本网站完全免费开源，开发者不收取任何费用。</li>
+    </ul>
+    <div class="disclaimer-btns">
+      <button class="btn btn-secondary" style="flex:1" onclick="window.location.href='about:blank'">不同意</button>
+      <button class="btn btn-primary" style="flex:1" onclick="acceptDisclaimer()">我已阅读并同意</button>
+    </div>
+  </div>
+</div>
+
+<div class="friend-modal" id="add-friend-modal">
+  <div class="friend-modal-box">
+    <h3 style="text-align:center;margin-bottom:12px;color:var(--pink)">➕ 添加好友</h3>
+    <label>角色名字 *</label>
+    <input type="text" id="friend-name" placeholder="给好友起个名字">
+    <label>头像URL（可选）</label>
+    <input type="text" id="friend-avatar" placeholder="https://...">
+    <label>背景图URL（可选）</label>
+    <input type="text" id="friend-bg" placeholder="https://...">
+    <label>人格DNA *</label>
+    <textarea id="friend-dna" rows="8" placeholder="粘贴角色的系统提示词/DNA文本..." style="resize:vertical"></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeAddFriend()">取消</button>
+      <button class="btn btn-primary" style="flex:1" onclick="confirmAddFriend()">确认添加</button>
     </div>
   </div>
 </div>
@@ -550,6 +623,7 @@ if (!settings.apiKey) settings.apiKey = DEFAULT_API_KEY;
 if (!settings.model) settings.model = DEFAULT_MODEL;
 if (!settings.instanceId) settings.instanceId = 'web-' + Math.random().toString(36).substr(2, 6);
 if (!settings.nickname) settings.nickname = '';
+if (!settings.apiUrl) settings.apiUrl = '';
 
 let messages = JSON.parse(localStorage.getItem('zhile_messages') || '[]');
 let _lastMsgTime = 0;
@@ -567,6 +641,8 @@ let secretLanguages = new Set(JSON.parse(localStorage.getItem('zhile_secret_lang
 let _achLock = false;
 
 // 好感度状态
+let friends = JSON.parse(localStorage.getItem('zhile_friends') || '[]');
+let currentChat = 'zhile';
 let affection = parseInt(localStorage.getItem('zhile_affection') || '0');
 let affectionLog = JSON.parse(localStorage.getItem('zhile_affection_log') || '[]');
 let dailyGain = JSON.parse(localStorage.getItem('zhile_daily_gain') || '{}'); // {date: amount}
@@ -710,6 +786,8 @@ function getAffectionPrompt() {
 
 // ============ 初始化 ============
 function init() {
+  if (!checkDisclaimer()) return;
+  renderFriendList();
   checkDailyLogin();
   updateGrowthBadge();
   updateUserIdentity();
@@ -1100,6 +1178,7 @@ function checkScroll() {
 
 // ============ 发送消息 ============
 async function sendMessage() {
+  if (currentChat !== 'zhile') { sendFriendMessage(); return; }
   const input = document.getElementById('user-input');
   const text = input.value.trim();
   if (!text || isWaiting) return;
@@ -1134,7 +1213,7 @@ async function sendMessage() {
     const recent = messages.slice(-20);
     apiMessages.push(...recent);
     
-    const response = await fetch(API_URL, {
+    const response = await fetch(settings.apiUrl || API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2735,6 +2814,7 @@ function toggleSettings() {
   document.getElementById('setting-model').value = settings.model;
   document.getElementById('setting-instance-id').value = settings.instanceId;
   document.getElementById('setting-nickname').value = settings.nickname || '';
+  document.getElementById('setting-api-url').value = settings.apiUrl || '';
   const a = Object.assign({}, DEFAULT_APPEARANCE, appearance);
   document.getElementById('setting-live2d-h').value = a.live2dH;
   document.getElementById('live2d-h-val').textContent = a.live2dH;
@@ -2754,6 +2834,7 @@ function saveSettings() {
   const newNickname = document.getElementById('setting-nickname').value.trim();
   const nicknameChanged = newNickname && newNickname !== settings.nickname;
   settings.nickname = newNickname;
+  settings.apiUrl = document.getElementById('setting-api-url').value.trim();
   localStorage.setItem('zhile_settings', JSON.stringify(settings));
   appearance.live2dH = parseInt(document.getElementById('setting-live2d-h').value);
   appearance.live2dOpacity = parseInt(document.getElementById('setting-live2d-opacity').value);
@@ -2795,9 +2876,17 @@ function clearChat() {
 }
 
 function exportData() {
-  const ZHILE_KEYS = ['zhile_settings','zhile_messages','zhile_growth','zhile_chat_count','zhile_achievements','zhile_emoji_collection','zhile_sticker_collection','zhile_ref_emojis','zhile_emoji_blacklist','zhile_login_dates','zhile_secret_langs','zhile_affection','zhile_affection_log','zhile_daily_gain','zhile_last_login','zhile_appearance'];
+  const ZHILE_KEYS = ['zhile_settings','zhile_messages','zhile_growth','zhile_chat_count','zhile_achievements','zhile_emoji_collection','zhile_sticker_collection','zhile_ref_emojis','zhile_emoji_blacklist','zhile_login_dates','zhile_secret_langs','zhile_affection','zhile_affection_log','zhile_daily_gain','zhile_last_login','zhile_appearance','zhile_friends','zhile_disclaimer_accepted'];
   const data = { _app: 'zhile-web', _version: '0.21', _exported: new Date().toISOString() };
   ZHILE_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v !== null) data[k] = v; });
+  // 导出好友数据（动态key）
+  const friendIds = JSON.parse(localStorage.getItem('zhile_friends') || '[]');
+  friendIds.forEach(fid => {
+    const fd = localStorage.getItem('zhile_friend_' + fid);
+    if (fd) data['zhile_friend_' + fid] = fd;
+    const fc = localStorage.getItem('zhile_friend_chat_' + fid);
+    if (fc) data['zhile_friend_chat_' + fid] = fc;
+  });
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -2845,6 +2934,179 @@ document.addEventListener('click', e => {
     e.target.classList.remove('open');
   }
 });
+
+
+// ============ 好友系统 ============
+function getFriendData(id) { return JSON.parse(localStorage.getItem('zhile_friend_' + id) || 'null'); }
+function saveFriendData(id, data) { localStorage.setItem('zhile_friend_' + id, JSON.stringify(data)); }
+function getFriendMessages(id) { return JSON.parse(localStorage.getItem('zhile_friend_chat_' + id) || '[]'); }
+function saveFriendMessages(id, msgs) { localStorage.setItem('zhile_friend_chat_' + id, JSON.stringify(msgs)); }
+
+function renderFriendList() {
+  const container = document.getElementById('chat-list-container');
+  if (!container) return;
+  // Keep 知乐 item, clear friends
+  const zhileItem = document.getElementById('chat-zhile');
+  container.innerHTML = '';
+  container.appendChild(zhileItem);
+  zhileItem.classList.toggle('active', currentChat === 'zhile');
+  
+  friends.forEach(id => {
+    const f = getFriendData(id);
+    if (!f) return;
+    const div = document.createElement('div');
+    div.className = 'chat-list-item' + (currentChat === id ? ' active' : '');
+    div.onclick = () => switchChat(id);
+    const avatar = f.avatar
+      ? '<div class="chat-avatar-sm"><img src="' + f.avatar + '" onerror="this.parentElement.textContent=\'🐱\'"></div>'
+      : '<div class="chat-avatar-sm">🐱</div>';
+    div.innerHTML = avatar + '<span class="chat-name">' + f.name + '</span><span class="chat-delete" onclick="event.stopPropagation();deleteFriend(\'' + id + '\')">✕</span>';
+    container.appendChild(div);
+  });
+}
+
+function showAddFriend() { document.getElementById('add-friend-modal').classList.add('open'); }
+function closeAddFriend() {
+  document.getElementById('add-friend-modal').classList.remove('open');
+  document.getElementById('friend-name').value = '';
+  document.getElementById('friend-avatar').value = '';
+  document.getElementById('friend-bg').value = '';
+  document.getElementById('friend-dna').value = '';
+}
+
+function confirmAddFriend() {
+  const name = document.getElementById('friend-name').value.trim();
+  const dna = document.getElementById('friend-dna').value.trim();
+  if (!name) { alert('请填写角色名字'); return; }
+  if (!dna) { alert('请粘贴人格DNA文本'); return; }
+  const id = 'f_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
+  const data = {
+    id: id, name: name,
+    avatar: document.getElementById('friend-avatar').value.trim(),
+    background: document.getElementById('friend-bg').value.trim(),
+    dna: dna, createdAt: new Date().toISOString()
+  };
+  saveFriendData(id, data);
+  saveFriendMessages(id, []);
+  friends.push(id);
+  localStorage.setItem('zhile_friends', JSON.stringify(friends));
+  closeAddFriend();
+  renderFriendList();
+  switchChat(id);
+}
+
+function switchChat(target) {
+  currentChat = target;
+  const headerName = document.querySelector('.header-name');
+  const headerStatus = document.getElementById('status');
+  const headerAvatar = document.getElementById('header-avatar-img');
+  const messagesDiv = document.getElementById('messages');
+  const live2dBtn = document.getElementById('live2d-btn');
+  const affDisplay = document.querySelector('.affection-display');
+  const live2dWrap = document.getElementById('live2d-wrap');
+  messagesDiv.innerHTML = '';
+  
+  if (target === 'zhile') {
+    headerName.textContent = '知乐';
+    headerStatus.textContent = '在线';
+    headerAvatar.src = 'https://zhile-web-1460393151.cos.ap-guangzhou.myqcloud.com/avatar/zhile_pixel.png?v=1';
+    live2dBtn.style.display = '';
+    affDisplay.style.display = '';
+    document.body.style.backgroundImage = '';
+    messages.forEach(m => {
+      const ts = m.ts || Date.now();
+      if (m.role === 'user') addUserMsg(m.content, ts);
+      else if (m.role === 'assistant') addZhileMsg(m.content, ts);
+    });
+  } else {
+    const f = getFriendData(target);
+    if (!f) { switchChat('zhile'); return; }
+    headerName.textContent = f.name;
+    headerStatus.textContent = '在线';
+    if (f.avatar) headerAvatar.src = f.avatar;
+    else headerAvatar.src = 'https://zhile-web-1460393151.cos.ap-guangzhou.myqcloud.com/avatar/zhile_pixel.png?v=1';
+    live2dBtn.style.display = 'none';
+    affDisplay.style.display = 'none';
+    if (live2dWrap.classList.contains('show')) live2dWrap.classList.remove('show');
+    if (f.background) document.body.style.backgroundImage = 'url(' + f.background + ')';
+    else document.body.style.backgroundImage = '';
+    const fMsgs = getFriendMessages(target);
+    fMsgs.forEach(m => {
+      const ts = m.ts || Date.now();
+      if (m.role === 'user') addUserMsg(m.content, ts);
+      else if (m.role === 'assistant') addZhileMsg(m.content, ts);
+    });
+  }
+  renderFriendList();
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+  scrollToBottom();
+}
+
+function deleteFriend(id) {
+  const f = getFriendData(id);
+  if (!f) return;
+  if (!confirm('确定删除好友「' + f.name + '」吗？聊天记录将一并清除，不可恢复。')) return;
+  localStorage.removeItem('zhile_friend_' + id);
+  localStorage.removeItem('zhile_friend_chat_' + id);
+  friends = friends.filter(x => x !== id);
+  localStorage.setItem('zhile_friends', JSON.stringify(friends));
+  if (currentChat === id) switchChat('zhile');
+  renderFriendList();
+}
+
+async function sendFriendMessage() {
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text || isWaiting) return;
+  input.value = '';
+  addUserMsg(text);
+  const fMsgs = getFriendMessages(currentChat);
+  fMsgs.push({ role: 'user', content: text, ts: Date.now() });
+  saveFriendMessages(currentChat, fMsgs);
+  isWaiting = true;
+  document.getElementById('send-btn').disabled = true;
+  showTyping();
+  try {
+    const f = getFriendData(currentChat);
+    const apiMessages = [
+      { role: 'system', content: f.dna + '\n\n当前时间: ' + new Date().toLocaleString('zh-CN', {timeZone:'Asia/Shanghai'}) }
+    ];
+    apiMessages.push(...fMsgs.slice(-20));
+    const apiUrl = settings.apiUrl || API_URL;
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + settings.apiKey },
+      body: JSON.stringify({ model: settings.model, messages: apiMessages, temperature: 0.8, max_tokens: 500 })
+    });
+    if (!response.ok) { const err = await response.text(); throw new Error('API错误 ' + response.status + ': ' + err.substring(0, 100)); }
+    const data = await response.json();
+    const reply = data.choices[0].message.content.trim();
+    addZhileMsg(reply, Date.now());
+    fMsgs.push({ role: 'assistant', content: reply, ts: Date.now() });
+    saveFriendMessages(currentChat, fMsgs);
+  } catch (err) {
+    addSystemMsg('连接出错: ' + err.message + ' 请在设置中检查API配置');
+  } finally {
+    isWaiting = false;
+    document.getElementById('send-btn').disabled = false;
+    hideTyping();
+    scrollToBottom();
+  }
+}
+
+// ============ 免责声明 ============
+function checkDisclaimer() {
+  if (!localStorage.getItem('zhile_disclaimer_accepted')) {
+    document.getElementById('disclaimer-overlay').style.display = 'flex';
+    return false;
+  }
+  return true;
+}
+function acceptDisclaimer() {
+  localStorage.setItem('zhile_disclaimer_accepted', '1');
+  document.getElementById('disclaimer-overlay').style.display = 'none';
+}
 
 // 启动
 init();
