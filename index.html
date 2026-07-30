@@ -1163,13 +1163,46 @@ function sanitizePII(text) {
   return s;
 }
 
-// ============ 远程成长事件同步 ============
+// ============ 远程成长事件同步（v2: 按实例聚合） ============
 async function reportGrowthToRemote(event) {
-  if (!GITHUB_DATA_TOKEN) return; // 未配置token时静默跳过
+  if (!GITHUB_DATA_TOKEN) return;
   try {
-    const filename = `${settings.instanceId}-${Date.now()}-${Math.random().toString(36).substr(2,4)}.json`;
-    const content = btoa(unescape(encodeURIComponent(JSON.stringify(event))));
-    // 1. 写入事件文件
+    const filename = `${settings.instanceId}.json`;
+    let existingEvents = [];
+    let fileSha = null;
+    
+    // 1. 从GitHub API获取当前实例文件内容+SHA
+    try {
+      const getRes = await fetch(GITHUB_EVENTS_API + filename, {
+        headers: { 'Authorization': `Bearer ${GITHUB_DATA_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' }
+      });
+      if (getRes.ok) {
+        const fileData = await getRes.json();
+        existingEvents = JSON.parse(atob(fileData.content.replace(/\n/g, '')));
+        if (!Array.isArray(existingEvents)) existingEvents = [existingEvents];
+        fileSha = fileData.sha;
+      }
+    } catch(e) { console.warn('GET instance file via API failed:', e.message); }
+    
+    // 2. 如果API失败，从jsDelivr获取内容（无SHA）
+    if (fileSha === null) {
+      try {
+        const jRes = await fetch(GITHUB_RAW_BASE + filename + '?t=' + Date.now());
+        if (jRes.ok) {
+          existingEvents = await jRes.json();
+          if (!Array.isArray(existingEvents)) existingEvents = [existingEvents];
+        }
+      } catch(e) { /* 新实例，正常 */ }
+    }
+    
+    // 3. 追加新事件
+    existingEvents.push(event);
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(existingEvents, null, 2))));
+    
+    // 4. PUT到GitHub
+    const putBody = { message: `Growth: ${event.type} from ${settings.instanceId}`, content: content };
+    if (fileSha) putBody.sha = fileSha;
+    
     const res = await fetch(GITHUB_EVENTS_API + filename, {
       method: 'PUT',
       headers: {
@@ -1177,51 +1210,57 @@ async function reportGrowthToRemote(event) {
         'Accept': 'application/vnd.github.v3+json',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        message: `Growth: ${event.type} from ${settings.instanceId}`,
-        content: content
-      })
+      body: JSON.stringify(putBody)
     });
+    
     if (res.ok) {
       console.log('\u2705 成长事件已上报远程');
-      // 3. Purge jsDelivr CDN缓存（让新事件尽快可见）
+      // 5. 新实例需更新index.json
+      if (fileSha === null) {
+        try {
+          const idxRes = await fetch(GITHUB_EVENTS_API + 'index.json', {
+            headers: { 'Authorization': `Bearer ${GITHUB_DATA_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' }
+          });
+          if (idxRes.ok) {
+            const idxData = await idxRes.json();
+            let fileNames = JSON.parse(atob(idxData.content.replace(/\n/g, '')));
+            if (!fileNames.includes(filename)) {
+              fileNames.push(filename);
+              const idxContent = btoa(unescape(encodeURIComponent(JSON.stringify(fileNames))));
+              await fetch(GITHUB_EVENTS_API + 'index.json', {
+                method: 'PUT',
+                headers: {
+                  'Authorization': `Bearer ${GITHUB_DATA_TOKEN}`,
+                  'Accept': 'application/vnd.github.v3+json',
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: `Add instance: ${filename}`, content: idxContent, sha: idxData.sha })
+              });
+            }
+          }
+        } catch(e2) { console.warn('索引更新失败:', e2.message); }
+      }
+      // 6. Purge jsDelivr缓存
       try {
+        await fetch('https://purge.jsdelivr.net/gh/' + GITHUB_DATA_OWNER + '/' + GITHUB_DATA_REPO + '@main/events/' + filename);
         await fetch('https://purge.jsdelivr.net/gh/' + GITHUB_DATA_OWNER + '/' + GITHUB_DATA_REPO + '@main/events/index.json');
         console.log('jsDelivr缓存已刷新');
       } catch(e3) { console.warn('缓存刷新失败:', e3.message); }
-      // 2. 更新索引文件（非关键，失败不影响主流程）
-      try {
-        const idxRes = await fetch(GITHUB_EVENTS_API + 'index.json', {
-          headers: { 'Authorization': `Bearer ${GITHUB_DATA_TOKEN}` }
-        });
-        let fileNames = ['initial-import.json'];
-        let idxSha = null;
-        if (idxRes.ok) {
-          const idxData = await idxRes.json();
-          fileNames = JSON.parse(atob(idxData.content.replace(/\n/g, '')));
-          idxSha = idxData.sha;
-        }
-        if (!fileNames.includes(filename)) fileNames.push(filename);
-        const idxContent = btoa(unescape(encodeURIComponent(JSON.stringify(fileNames))));
-        await fetch(GITHUB_EVENTS_API + 'index.json', {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${GITHUB_DATA_TOKEN}`,
-            'Accept': 'application/vnd.github.v3+json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            message: `Update index: ${filename}`,
-            content: idxContent,
-            sha: idxSha
-          })
-        });
-      } catch (e2) { console.warn('索引更新失败:', e2.message); }
+    } else if (res.status === 422) {
+      // SHA不匹配（多设备并发），回退到单独事件文件
+      console.warn('SHA不匹配，回退到单独事件文件');
+      const fbName = `${settings.instanceId}-${Date.now()}-${Math.random().toString(36).substr(2,4)}.json`;
+      const fbContent = btoa(unescape(encodeURIComponent(JSON.stringify([event], null, 2))));
+      await fetch(GITHUB_EVENTS_API + fbName, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${GITHUB_DATA_TOKEN}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: `Growth (fallback): ${event.type}`, content: fbContent })
+      });
     } else {
-      console.warn('\u26a0\ufe0f 远程上报失败:', res.status);
+      console.warn('远程上报失败:', res.status);
     }
   } catch (e) {
-    console.warn('\u26a0\ufe0f 远程上报异常:', e);
+    console.warn('远程上报异常:', e);
   }
 }
 
