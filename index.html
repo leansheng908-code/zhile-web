@@ -1622,26 +1622,60 @@ function updateAchievementDisplay() {
 function updateEmojiDisplay() {
   const grid = document.getElementById('emoji-grid');
   if (!grid) return;
-  const count = Object.keys(emojiCollection).length;
+  const emoCount = Object.keys(emojiCollection).length;
+  const stkCount = Object.keys(stickerCollection).length;
+  const totalCount = emoCount + stkCount;
   const countEl = document.getElementById('emoji-count');
-  if (countEl) countEl.textContent = '(' + count + ' 种)';
+  if (countEl) countEl.textContent = '(' + totalCount + ' 种)';
   
-  if (count === 0) {
-    grid.innerHTML = '<div style="color:#666;font-size:12px;text-align:center;padding:20px;grid-column:1/-1">还没有收集到颜文字，多跟知乐聊聊吧~</div>';
-    return;
+  let html = '';
+  
+  // ===== 颜文字区 =====
+  if (emoCount === 0) {
+    html += '<div style="color:#666;font-size:12px;text-align:center;padding:20px;grid-column:1/-1">还没有收集到颜文字，多跟知乐聊聊吧~</div>';
+  } else {
+    const sorted = Object.entries(emojiCollection).sort((a, b) => new Date(a[1].firstSeen) - new Date(b[1].firstSeen));
+    html += sorted.map(([emoji, info]) => {
+      const date = new Date(info.firstSeen).toLocaleDateString('zh-CN');
+      return '<div class="emoji-cell discovered" title="首次: ' + date + ' · 使用' + info.count + '次">' +
+        '<div>' + emoji + '</div><div class="emoji-count">×' + info.count + '</div></div>';
+    }).join('');
+    // Show locked cells for reference library emojis not yet discovered
+    const refEmojis = ['₍^•ω•^₍', '(=´∀｀)', '(//ω//)', '(⡙°□°)⡙︵ ┻━┻', '(=^※^=)', '(｡♥‿♥｡)', '(´;ω;`)', '˶ᵙ ᴥ ᵙ˶', '˶>ᗛ<˶', '૔(´▽★)૕', '(•̀ᵗ•́)ы', '٩(๑❛ᵗ❛๑)۶', '(｡•́￣•̀｡)'];
+    refEmojis.forEach(e => {
+      if (!emojiCollection[e]) html += '<div class="emoji-cell locked"></div>';
+    });
   }
   
-  const sorted = Object.entries(emojiCollection).sort((a, b) => new Date(a[1].firstSeen) - new Date(b[1].firstSeen));
-  let html = sorted.map(([emoji, info]) => {
-    const date = new Date(info.firstSeen).toLocaleDateString('zh-CN');
-    return '<div class="emoji-cell discovered" title="首次: ' + date + ' \u00B7 使用' + info.count + '次">' +
-      '<div>' + emoji + '</div><div class="emoji-count">\u00D7' + info.count + '</div></div>';
-  }).join('');
+  // ===== 贴纸区 =====
+  html += '<div style="grid-column:1/-1;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,183,197,.15);font-size:11px;color:#aaa;display:flex;align-items:center;gap:6px">🎨 表情贴纸 (' + stkCount + '/' + '8)</div>';
   
-  // Show locked cells for reference library emojis not yet discovered
-  const refEmojis = ['₍^•ω•^₍', '(=´∀｀)', '(//ω//)', '(⡙°□°)⡙︵ ┻━┻', '(=^※^=)', '(｡♥‿♥｡)', '(´;ω;`)', '˶ᵙ ᴥ ᵙ˶', '˶>ᗛ<˶', '૔(´▽★)૕', '(•̀ᵗ•́)ы', '٩(๑❛ᵗ❛๑)٦', '(｡•́￡•̀｡)'];
-  refEmojis.forEach(e => {
-    if (!emojiCollection[e]) html += '<div class="emoji-cell locked"></div>';
+  if (stkCount === 0) {
+    html += '<div style="color:#555;font-size:11px;text-align:center;padding:10px;grid-column:1/-1">还没有收到贴纸，聊天的时侯知乐可能会发哦~</div>';
+  } else {
+    // Show collected stickers sorted by firstSeen
+    const stkSorted = Object.entries(stickerCollection).sort((a, b) => new Date(a[1].firstSeen) - new Date(b[1].firstSeen));
+    html += stkSorted.map(([url, info]) => {
+      const date = new Date(info.firstSeen).toLocaleDateString('zh-CN');
+      return '<div class="sticker-cell" title="' + (info.label || '贴纸') + ' · 首次: ' + date + ' · 收到' + info.count + '次">' +
+        '<img src="' + url + '" alt="' + (info.label || '') + '">' +
+        '<div class="sticker-label">' + (info.label || '') + '</div>' +
+        '<div class="emoji-count">×' + info.count + '</div></div>';
+    }).join('');
+  }
+  
+  // Show locked cells for uncollected stickers (8 total: happy, shy, angry, sleepy×2, surprise×2, sad)
+  const allStickerUrls = [];
+  Object.values(ZHILE_STICKERS).forEach(arr => arr.forEach(u => allStickerUrls.push(u)));
+  allStickerUrls.forEach(url => {
+    if (!stickerCollection[url]) {
+      // Extract label from STICKER_LABELS based on url key
+      let label = '?';
+      for (const [key, arr] of Object.entries(ZHILE_STICKERS)) {
+        if (arr.includes(url)) { label = STICKER_LABELS[key] || '?'; break; }
+      }
+      html += '<div class="sticker-cell locked"><div style="font-size:18px;opacity:.3">❓</div><div class="sticker-label">' + label + '</div></div>';
+    }
   });
   
   grid.innerHTML = html;
