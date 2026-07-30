@@ -513,6 +513,9 @@ let chatCount = parseInt(localStorage.getItem('zhile_chat_count') || '0');
 let achievements = JSON.parse(localStorage.getItem('zhile_achievements') || '{}');
 let emojiCollection = JSON.parse(localStorage.getItem('zhile_emoji_collection') || '{}');
 let stickerCollection = JSON.parse(localStorage.getItem('zhile_sticker_collection') || '{}');
+const DEFAULT_REF_EMOJIS = ['₍^•ω•^₍','(=´∀｀)','(//ω//)','(⡙°□°)⡙︵ ┻━┻','(=^※^=)','(｡♥‿♥｡)','(´;ω;`\')','˶ᵙ ᴥ ᵙ˶','˶>ᗛ<˶','૔(´▽★)૕','(•̀ᵗ•́)ы','٩(๑❛ᵗ❛๑)۶','(｡•́￣•̀｡)'];
+let refEmojis = JSON.parse(localStorage.getItem('zhile_ref_emojis') || JSON.stringify(DEFAULT_REF_EMOJIS));
+let emojiBlacklist = JSON.parse(localStorage.getItem('zhile_emoji_blacklist') || '[]');
 let loginDates = JSON.parse(localStorage.getItem('zhile_login_dates') || '[]');
 let secretLanguages = new Set(JSON.parse(localStorage.getItem('zhile_secret_langs') || '[]'));
 let _achLock = false;
@@ -694,8 +697,10 @@ function init() {
     messages.forEach(m => {
       if (m.role === 'assistant') {
         extractEmojis(m.content).forEach(e => {
+          if (emojiBlacklist.includes(e)) return;
           if (!emojiCollection[e]) emojiCollection[e] = { firstSeen: new Date().toISOString(), count: 1 };
           else emojiCollection[e].count++;
+          if (!refEmojis.includes(e)) { refEmojis.push(e); localStorage.setItem('zhile_ref_emojis', JSON.stringify(refEmojis)); }
         });
       }
     });
@@ -1339,8 +1344,10 @@ function detectGrowthEvent(text, role, emotion) {
   if (role === 'assistant') {
     const emojis = extractEmojis(text);
     emojis.forEach(e => {
+      if (emojiBlacklist.includes(e)) return;
       if (!emojiCollection[e]) {
         emojiCollection[e] = { firstSeen: new Date().toISOString(), count: 1 };
+        if (!refEmojis.includes(e)) { refEmojis.push(e); localStorage.setItem('zhile_ref_emojis', JSON.stringify(refEmojis)); }
         if (!event) event = { type: 'new_emoji', desc: '使用新颜文字: ' + e, detail: e };
       } else {
         emojiCollection[e].count++;
@@ -1637,23 +1644,22 @@ function updateEmojiDisplay() {
     const sorted = Object.entries(emojiCollection).sort((a, b) => new Date(a[1].firstSeen) - new Date(b[1].firstSeen));
     html += sorted.map(([emoji, info]) => {
       const date = new Date(info.firstSeen).toLocaleDateString('zh-CN');
-      return '<div class="emoji-cell discovered" title="首次: ' + date + ' · 使用' + info.count + '次">' +
+      return '<div class="emoji-cell discovered" data-emoji="' + emoji.replace(/"/g, '&quot;') + '" title="首次: ' + date + ' · 使用' + info.count + '次\n长按可删除" style="cursor:pointer">' +
         '<div>' + emoji + '</div><div class="emoji-count">×' + info.count + '</div></div>';
     }).join('');
-    // Show locked cells for reference library emojis not yet discovered
-    const refEmojis = ['₍^•ω•^₍', '(=´∀｀)', '(//ω//)', '(⡙°□°)⡙︵ ┻━┻', '(=^※^=)', '(｡♥‿♥｡)', '(´;ω;`)', '˶ᵙ ᴥ ᵙ˶', '˶>ᗛ<˶', '૔(´▽★)૕', '(•̀ᵗ•́)ы', '٩(๑❛ᵗ❛๑)۶', '(｡•́￣•̀｡)'];
-    refEmojis.forEach(e => {
-      if (!emojiCollection[e]) html += '<div class="emoji-cell locked"></div>';
-    });
   }
+  // Show locked cells for reference library emojis not yet discovered (skip blacklisted)
+  refEmojis.forEach(e => {
+    if (emojiBlacklist.includes(e)) return;
+    if (!emojiCollection[e]) html += '<div class="emoji-cell locked"></div>';
+  });
   
   // ===== 贴纸区 =====
-  html += '<div style="grid-column:1/-1;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,183,197,.15);font-size:11px;color:#aaa;display:flex;align-items:center;gap:6px">🎨 表情贴纸 (' + stkCount + '/' + '8)</div>';
+  html += '<div style="grid-column:1/-1;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,183,197,.15);font-size:11px;color:#aaa;display:flex;align-items:center;gap:6px">🎨 表情贴纸 (' + stkCount + '/8)</div>';
   
   if (stkCount === 0) {
     html += '<div style="color:#555;font-size:11px;text-align:center;padding:10px;grid-column:1/-1">还没有收到贴纸，聊天的时侯知乐可能会发哦~</div>';
   } else {
-    // Show collected stickers sorted by firstSeen
     const stkSorted = Object.entries(stickerCollection).sort((a, b) => new Date(a[1].firstSeen) - new Date(b[1].firstSeen));
     html += stkSorted.map(([url, info]) => {
       const date = new Date(info.firstSeen).toLocaleDateString('zh-CN');
@@ -1663,13 +1669,10 @@ function updateEmojiDisplay() {
         '<div class="emoji-count">×' + info.count + '</div></div>';
     }).join('');
   }
-  
-  // Show locked cells for uncollected stickers (8 total: happy, shy, angry, sleepy×2, surprise×2, sad)
   const allStickerUrls = [];
   Object.values(ZHILE_STICKERS).forEach(arr => arr.forEach(u => allStickerUrls.push(u)));
   allStickerUrls.forEach(url => {
     if (!stickerCollection[url]) {
-      // Extract label from STICKER_LABELS based on url key
       let label = '?';
       for (const [key, arr] of Object.entries(ZHILE_STICKERS)) {
         if (arr.includes(url)) { label = STICKER_LABELS[key] || '?'; break; }
@@ -1679,8 +1682,51 @@ function updateEmojiDisplay() {
   });
   
   grid.innerHTML = html;
+  
+  // Bind long-press for delete on discovered emoji cells
+  grid.querySelectorAll('.emoji-cell.discovered[data-emoji]').forEach(cell => {
+    let pressTimer = null;
+    cell.addEventListener('touchstart', () => {
+      pressTimer = setTimeout(() => {
+        const emo = cell.getAttribute('data-emoji');
+        if (confirm('删除颜文字「' + emo + '」？\n删除后不会出现在图鉴中，知乐也会记住不使用它。')) {
+          delete emojiCollection[emo];
+          localStorage.setItem('zhile_emoji_collection', JSON.stringify(emojiCollection));
+          const ri = refEmojis.indexOf(emo);
+          if (ri > -1) refEmojis.splice(ri, 1);
+          localStorage.setItem('zhile_ref_emojis', JSON.stringify(refEmojis));
+          if (!emojiBlacklist.includes(emo)) emojiBlacklist.push(emo);
+          localStorage.setItem('zhile_emoji_blacklist', JSON.stringify(emojiBlacklist));
+          // Report as growth event
+          addGrowthEvent({ type: 'emoji_blacklist', desc: '淘汰显示异常的颜文字', detail: emo });
+          reportGrowthToRemote({ type: 'emoji_blacklist', desc: '淘汰显示异常的颜文字', detail: emo });
+          updateEmojiDisplay();
+        }
+      }, 600);
+    });
+    cell.addEventListener('touchend', () => { clearTimeout(pressTimer); });
+    cell.addEventListener('touchmove', () => { clearTimeout(pressTimer); });
+    cell.addEventListener('mousedown', () => {
+      pressTimer = setTimeout(() => {
+        const emo = cell.getAttribute('data-emoji');
+        if (confirm('删除颜文字「' + emo + '」？\n删除后不会出现在图鉴中，知乐也会记住不使用它。')) {
+          delete emojiCollection[emo];
+          localStorage.setItem('zhile_emoji_collection', JSON.stringify(emojiCollection));
+          const ri = refEmojis.indexOf(emo);
+          if (ri > -1) refEmojis.splice(ri, 1);
+          localStorage.setItem('zhile_ref_emojis', JSON.stringify(refEmojis));
+          if (!emojiBlacklist.includes(emo)) emojiBlacklist.push(emo);
+          localStorage.setItem('zhile_emoji_blacklist', JSON.stringify(emojiBlacklist));
+          addGrowthEvent({ type: 'emoji_blacklist', desc: '淘汰显示异常的颜文字', detail: emo });
+          reportGrowthToRemote({ type: 'emoji_blacklist', desc: '淘汰显示异常的颜文字', detail: emo });
+          updateEmojiDisplay();
+        }
+      }, 600);
+    });
+    cell.addEventListener('mouseup', () => { clearTimeout(pressTimer); });
+    cell.addEventListener('mouseleave', () => { clearTimeout(pressTimer); });
+  });
 }
-
 function switchCategory(cat, btn) {
   document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -1712,6 +1758,7 @@ const TL_TYPE_META = {
   achievement: { color: '#ffd700', icon: '🏆' },
   positive_interaction: { color: '#4caf50', icon: '💕' },
   growth: { color: '#4caf50', icon: '🌱' },
+  emoji_blacklist: { color: '#e74c3c', icon: '🚫' },
   default: { color: '#87ceeb', icon: '✨' }
 };
 
@@ -2581,7 +2628,7 @@ function clearChat() {
 }
 
 function exportData() {
-  const ZHILE_KEYS = ['zhile_settings','zhile_messages','zhile_growth','zhile_chat_count','zhile_achievements','zhile_emoji_collection','zhile_sticker_collection','zhile_login_dates','zhile_secret_langs','zhile_affection','zhile_affection_log','zhile_daily_gain','zhile_last_login'];
+  const ZHILE_KEYS = ['zhile_settings','zhile_messages','zhile_growth','zhile_chat_count','zhile_achievements','zhile_emoji_collection','zhile_sticker_collection','zhile_ref_emojis','zhile_emoji_blacklist','zhile_login_dates','zhile_secret_langs','zhile_affection','zhile_affection_log','zhile_daily_gain','zhile_last_login'];
   const data = { _app: 'zhile-web', _version: '0.16', _exported: new Date().toISOString() };
   ZHILE_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v !== null) data[k] = v; });
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
