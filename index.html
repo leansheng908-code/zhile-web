@@ -4192,43 +4192,11 @@ function closeGcSummaryView(){
   document.getElementById('gc-summary-view').classList.remove('open');
 }
 
-function renderGcSummaryList(){
-  var summaries = JSON.parse(localStorage.getItem('zhile_gc_summaries') || '[]');
-  var container = document.getElementById('gc-summary-list');
-  document.getElementById('gc-summary-count').textContent = summaries.length + '/30';
-  
-  if(summaries.length === 0){
-    container.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px 16px;font-size:14px">还没有群聊总结<br>在群聊中点击📝按钮即可总结</div>';
-    return;
-  }
-  
-  summaries.reverse(); // 最新的在前
-  container.innerHTML = '';
-  summaries.forEach(function(s){
-    var card = document.createElement('div');
-    card.className = 'gc-summary-card';
-    card.innerHTML = 
-      '<div class="sc-title">' + escapeHtml(s.groupName) + '</div>' +
-      '<div class="sc-topic">话题: ' + escapeHtml(s.topic) + '</div>' +
-      '<div class="sc-preview">' + escapeHtml(s.summary) + '</div>' +
-      '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px">' + s.date + ' · ' + s.msgCount + '条消息 · ' + s.memberNames + '</div>' +
-      '<div class="sc-meta">' +
-        '<span class="sc-btn" onclick="event.stopPropagation();viewGcSummaryDetail(\'' + s.id + '\')">📖查看</span>' +
-        '<span class="sc-btn" onclick="event.stopPropagation();exportGcSummary(\'' + s.id + '\')">📥导出</span>' +
-        '<span class="sc-btn" onclick="event.stopPropagation();syncGcToMemory(\'' + s.id + '\')">🔄同步记忆</span>' +
-        '<span class="sc-btn sc-danger" onclick="event.stopPropagation();deleteGcSummary(\'' + s.id + '\')">🗑删除</span>' +
-      '</div>';
-    card.onclick = function(){ viewGcSummaryDetail(s.id); };
-    container.appendChild(card);
-  });
-}
-
 function viewGcSummaryDetail(summaryId){
   var summaries = JSON.parse(localStorage.getItem('zhile_gc_summaries') || '[]');
   var s = summaries.find(function(x){ return x.id === summaryId; });
   if(!s) return;
   
-  // 创建全屏查看
   var overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px';
   overlay.id = 'gc-detail-overlay';
@@ -4236,16 +4204,53 @@ function viewGcSummaryDetail(summaryId){
   
   var box = document.createElement('div');
   box.style.cssText = 'background:#1a1a2e;border-radius:16px;padding:20px;max-width:400px;width:100%;max-height:80vh;overflow-y:auto';
-  box.innerHTML = 
-    '<h3 style="color:var(--pink);margin-bottom:8px">' + escapeHtml(s.groupName) + '</h3>' +
-    '<div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px">话题: ' + escapeHtml(s.topic) + '</div>' +
-    '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:14px">' + s.date + ' · ' + s.msgCount + '条消息</div>' +
-    '<div style="font-size:14px;color:rgba(255,255,255,0.85);line-height:1.7;white-space:pre-wrap">' + escapeHtml(s.summary) + '</div>' +
-    '<div style="display:flex;gap:8px;margin-top:18px">' +
-      '<button class="btn btn-secondary" style="flex:1" onclick="document.getElementById(\'gc-detail-overlay\').remove()">关闭</button>' +
-      '<button class="btn btn-primary" style="flex:1" onclick="exportGcSummary(\'' + s.id + '\')">📥导出</button>' +
-      '<button class="btn" style="flex:1;background:rgba(74,158,255,0.2);color:#4a9eff;border:1px solid rgba(74,158,255,0.3)" onclick="syncGcToMemory(\'' + s.id + '\')">🔄同步</button>' +
-    '</div>';
+  
+  var h3 = document.createElement('h3');
+  h3.style.cssText = 'color:var(--pink);margin-bottom:8px';
+  h3.textContent = s.groupName;
+  box.appendChild(h3);
+  
+  var topicP = document.createElement('div');
+  topicP.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px';
+  topicP.textContent = '话题: ' + s.topic;
+  box.appendChild(topicP);
+  
+  var metaP = document.createElement('div');
+  metaP.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:14px';
+  metaP.textContent = s.date + ' \u00b7 ' + s.msgCount + '条消息';
+  box.appendChild(metaP);
+  
+  var bodyP = document.createElement('div');
+  bodyP.style.cssText = 'font-size:14px;color:rgba(255,255,255,0.85);line-height:1.7;white-space:pre-wrap';
+  bodyP.textContent = s.summary;
+  box.appendChild(bodyP);
+  
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:8px;margin-top:18px';
+  
+  var closeBtn = document.createElement('button');
+  closeBtn.className = 'btn btn-secondary';
+  closeBtn.style.flex = '1';
+  closeBtn.textContent = '关闭';
+  closeBtn.onclick = function(){ overlay.remove(); };
+  btnRow.appendChild(closeBtn);
+  
+  var exportBtn = document.createElement('button');
+  exportBtn.className = 'btn btn-primary';
+  exportBtn.style.flex = '1';
+  exportBtn.textContent = '导出';
+  exportBtn.dataset.sid = s.id;
+  exportBtn.onclick = function(){ exportGcSummary(this.dataset.sid); };
+  btnRow.appendChild(exportBtn);
+  
+  var syncBtn = document.createElement('button');
+  syncBtn.style.cssText = 'flex:1;background:rgba(74,158,255,0.2);color:#4a9eff;border:1px solid rgba(74,158,255,0.3);border-radius:8px;padding:10px;cursor:pointer';
+  syncBtn.textContent = '同步';
+  syncBtn.dataset.sid = s.id;
+  syncBtn.onclick = function(){ syncGcToMemory(this.dataset.sid); };
+  btnRow.appendChild(syncBtn);
+  
+  box.appendChild(btnRow);
   overlay.appendChild(box);
   document.body.appendChild(overlay);
 }
@@ -4281,12 +4286,12 @@ function syncGcToMemory(summaryId){
     return;
   }
   
-  // 为每个参与角色写入记忆消息
   var group = zhile_groups.find(function(g){ return g.id === s.groupId; });
-  if(!group) return;
+  if(!group){ showToast('群聊已不存在'); return; }
   
+  var syncedCount = 0;
   group.members.forEach(function(mid){
-    if(mid === 'zhile') return; // 知乐的记忆由主系统管理，跳过
+    if(mid === 'zhile') return;
     var chatKey = 'zhile_friend_chat_' + mid;
     var chat = JSON.parse(localStorage.getItem(chatKey) || '[]');
     chat.push({
@@ -4295,12 +4300,12 @@ function syncGcToMemory(summaryId){
       ts: Date.now(),
       isMemory: true
     });
-    // 只保留最近200条
     if(chat.length > 200) chat = chat.slice(-200);
     localStorage.setItem(chatKey, JSON.stringify(chat));
+    syncedCount++;
   });
   
-  showToast('已同步到 ' + (group.members.length - 1) + ' 个角色的记忆');
+  showToast('已同步到 ' + syncedCount + ' 个角色的记忆');
 }
 
 function deleteGcSummary(summaryId){
@@ -4312,481 +4317,72 @@ function deleteGcSummary(summaryId){
   showToast('已删除');
 }
 
-function openGcCreateModal(isEdit){
-  gcEditMode = !!isEdit;
-  gcSelectedMembers = ['zhile'];
-  var modal = document.getElementById('gc-create-modal');
-  var list = document.getElementById('gc-member-list');
-  document.getElementById('gc-modal-title').textContent = isEdit ? '编辑群聊' : '创建群聊';
-  list.innerHTML = '';
-  var zhileItem = document.createElement('div');
-  zhileItem.className = 'gc-member-item selected';
-  zhileItem.style.opacity = '0.6';
-  zhileItem.innerHTML = '<div class="gc-member-check"></div><img src="'+ZHILE_AVATAR+'" style="width:32px;height:32px;border-radius:50%"><span style="color:#fff;font-size:14px">知乐</span><span style="color:rgba(255,255,255,0.3);font-size:12px;margin-left:auto">默认</span>';
-  list.appendChild(zhileItem);
-  zhile_friends.forEach(function(f){
-    var item = document.createElement('div');
-    item.className = 'gc-member-item';
-    item.innerHTML = '<div class="gc-member-check"></div>' + 
-      (f.avatar ? '<img src="'+f.avatar+'" style="width:32px;height:32px;border-radius:50%">' : '<div style="width:32px;height:32px;border-radius:50%;background:var(--accent-color);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px">'+f.name.charAt(0)+'</div>') +
-      '<span style="color:#fff;font-size:14px">'+f.name+'</span>';
-    item.onclick = function(){
-      var idx = gcSelectedMembers.indexOf(f.id);
-      if(idx >= 0){
-        if(gcSelectedMembers.length <= 2) return;
-        gcSelectedMembers.splice(idx, 1);
-        item.classList.remove('selected');
-      } else {
-        if(gcSelectedMembers.length >= 5) return;
-        gcSelectedMembers.push(f.id);
-        item.classList.add('selected');
-      }
-    };
-    list.appendChild(item);
-  });
-  if(zhile_friends.length === 0){
-    list.innerHTML += '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:20px;font-size:13px">还没有好友，先添加好友再创建群聊</div>';
-  }
-  modal.classList.add('open');
-}
 
-function closeGcCreateModal(){
-  document.getElementById('gc-create-modal').classList.remove('open');
-}
 
-function confirmCreateGroup(){
-  if(gcSelectedMembers.length < 2){ alert('至少需要选择1个好友！'); return; }
-  if(gcEditMode && gcEditId){
-    var group = zhile_groups.find(function(g){ return g.id === gcEditId; });
-    if(group){
-      group.members = gcSelectedMembers.slice();
-      group.name = group.members.map(function(mid){
-        if(mid === 'zhile') return '知乐';
-        var f = zhile_friends.find(function(fr){ return fr.id === mid; });
-        return f ? f.name : '?';
-      }).join('·') + '群';
-    }
-  } else {
-    var groupName = gcSelectedMembers.map(function(mid){
-      if(mid === 'zhile') return '知乐';
-      var f = zhile_friends.find(function(fr){ return fr.id === mid; });
-      return f ? f.name : '?';
-    }).join('·') + '群';
-    var newGroup = { id: 'gc_' + Date.now(), name: groupName, members: gcSelectedMembers.slice(), createdTime: Date.now() };
-    zhile_groups.push(newGroup);
-  }
-  saveGroups();
-  closeGcCreateModal();
-  if(gcEditMode && gcEditId){
-    openGroupChat(gcEditId);
-    gcEditId = null;
-  } else {
-    openGroupChat(zhile_groups[zhile_groups.length - 1].id);
-  }
-  gcEditMode = false;
-}
-
-function showGroupSettings(){
-  if(!currentGroupId) return;
-  gcEditMode = true;
-  gcEditId = currentGroupId;
-  var group = zhile_groups.find(function(g){ return g.id === currentGroupId; });
-  if(group){ gcSelectedMembers = group.members.slice(); }
-  openGcCreateModal(true);
-  setTimeout(function(){
-    var items = document.querySelectorAll('#gc-member-list .gc-member-item');
-    items.forEach(function(item, idx){
-      if(idx === 0) return;
-      var friend = zhile_friends[idx - 1];
-      if(friend && gcSelectedMembers.indexOf(friend.id) >= 0){ item.classList.add('selected'); }
-    });
-  }, 50);
-}
-
-updateGcSummary();
-
-function checkMomentsGeneration() {
-  var fl = getFriendsList();
-  if (fl.length === 0) {
-    renderMoments();
+function renderGcSummaryList(){
+  var summaries = JSON.parse(localStorage.getItem('zhile_gc_summaries') || '[]');
+  var container = document.getElementById('gc-summary-list');
+  document.getElementById('gc-summary-count').textContent = summaries.length + '/30';
+  
+  if(summaries.length === 0){
+    container.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px 16px;font-size:14px">还没有群聊总结<br>在群聊中点击\u{1F4DD}按钮即可总结</div>';
     return;
   }
-  var loading = document.getElementById('moments-loading');
-  var refreshBtn = document.getElementById('moments-refresh-btn');
-  if (loading) loading.style.display = 'block';
-  if (refreshBtn) { refreshBtn.disabled = true; refreshBtn.textContent = '⏳ 生成中'; }
-  try {
-    var moments = getMoments();
-    var now = Date.now();
-    var today = new Date();
-    today.setHours(0, 0, 0, 0);
-    var todayStart = today.getTime();
-    var todayMoments = moments.filter(function(m) { return m.createdTime >= todayStart && !m.isPrivate; });
-    var lastTime = moments.length > 0 ? Math.max.apply(null, moments.map(function(m) { return m.createdTime; })) : 0;
-    // 生成新动态
-    if (todayMoments.length < 3 && now - lastTime > 3 * 3600000) {
-      await generateMoment(fl, moments);
-    }
-    // 隔天回复
-    await checkPendingReplies();
-    // 知乐自动评论
-    await checkAutoComment('zhile');
-    // 好友互评
-    await checkAutoComment('friend');
-  } catch(e) {
-    console.error('checkMomentsGeneration error:', e);
-  } finally {
-    if (loading) loading.style.display = 'none';
-    if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.textContent = '🔄 刷新'; }
-    renderMoments();
-  }
-}
-
-
-// ============ 仅你可见动态 ============
-function checkPrivateMoment(friendId, userText, friendReply) {
-  // 私密话题关键词检测
-  var privateKeywords = /喜欢|爱你|想你|陪你|一个人|心事|秘密|告白|在乎|温暖|孤独|害怕|依赖|信任|软弱|眼泪|哭|心里话|一直在|不会离开|舍不得|最重要|舍不得你|守护|心动|撒娇|抱抱|牵手|亲吻|想念|牵挂|放不下|舍不得走/;
-  var combined = userText + ' ' + (friendReply || '');
-  if (!privateKeywords.test(combined)) return;
   
-  // 每个好友每天最多1条仅你可见
-  var moments = getMoments();
-  var today = new Date(); today.setHours(0,0,0,0);
-  var todayStart = today.getTime();
-  var hasPrivateToday = moments.some(function(m) {
-    return m.isPrivate && m.authorId === friendId && m.createdTime >= todayStart;
+  summaries.reverse();
+  container.innerHTML = '';
+  summaries.forEach(function(s){
+    var card = document.createElement('div');
+    card.className = 'gc-summary-card';
+    
+    var titleDiv = document.createElement('div');
+    titleDiv.className = 'sc-title';
+    titleDiv.textContent = s.groupName;
+    card.appendChild(titleDiv);
+    
+    var topicDiv = document.createElement('div');
+    topicDiv.className = 'sc-topic';
+    topicDiv.textContent = '话题: ' + s.topic;
+    card.appendChild(topicDiv);
+    
+    var previewDiv = document.createElement('div');
+    previewDiv.className = 'sc-preview';
+    previewDiv.textContent = s.summary;
+    card.appendChild(previewDiv);
+    
+    var metaDiv = document.createElement('div');
+    metaDiv.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px';
+    metaDiv.textContent = s.date + ' \u00b7 ' + s.msgCount + '条消息 \u00b7 ' + s.memberNames;
+    card.appendChild(metaDiv);
+    
+    var btnDiv = document.createElement('div');
+    btnDiv.className = 'sc-meta';
+    
+    var btns = [
+      {text:'\u{1F4D6}查看', fn:'viewGcSummaryDetail', danger:false},
+      {text:'\u{1F4E5}导出', fn:'exportGcSummary', danger:false},
+      {text:'\u{1F504}同步记忆', fn:'syncGcToMemory', danger:false},
+      {text:'\u{1F5D1}删除', fn:'deleteGcSummary', danger:true}
+    ];
+    btns.forEach(function(b){
+      var span = document.createElement('span');
+      span.className = 'sc-btn' + (b.danger ? ' sc-danger' : '');
+      span.textContent = b.text;
+      span.dataset.sid = s.id;
+      span.onclick = function(ev){
+        ev.stopPropagation();
+        if(b.fn === 'viewGcSummaryDetail') viewGcSummaryDetail(this.dataset.sid);
+        else if(b.fn === 'exportGcSummary') exportGcSummary(this.dataset.sid);
+        else if(b.fn === 'syncGcToMemory') syncGcToMemory(this.dataset.sid);
+        else if(b.fn === 'deleteGcSummary') deleteGcSummary(this.dataset.sid);
+      };
+      btnDiv.appendChild(span);
+    });
+    card.appendChild(btnDiv);
+    
+    card.onclick = function(){ viewGcSummaryDetail(s.id); };
+    container.appendChild(card);
   });
-  if (hasPrivateToday) return;
-  
-  // 30%概率触发（不是每次聊到都发）
-  if (Math.random() > 0.3) return;
-  
-  // 异步生成，不阻塞聊天
-  setTimeout(function() { generatePrivateMoment(friendId, userText, friendReply); }, 2000);
-}
-
-async function generatePrivateMoment(friendId, userText, friendReply) {
-  var f = getFriendData(friendId);
-  if (!f) return;
-  try {
-    var dnaSnippet = f.dna ? f.dna.substring(0, 2000) : '一个有趣的角色';
-    var prompt = '你是「' + f.name + '」。你刚刚和一位重要的人聊了一些私密/亲密的话题。\n\n'
-      + '对方说了：「' + userText.substring(0, 200) + '」\n'
-      + '你回复了：「' + (friendReply || '').substring(0, 200) + '」\n\n'
-      + '角色设定：' + dnaSnippet + '\n\n'
-      + '请发一条「仅你可见」的朋友圈动态，像是只对那个人说的话（30-100字）。\n'
-      + '要求：\n1. 语气私密、温柔或带点小害羞\n2. 像是深夜发给特定的人看的\n3. 不要太直白地复述对话，而是表达此刻的心情\n4. 只输出动态内容本身';
-    var apiUrl = settings.apiUrl || API_URL;
-    var resp = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + settings.apiKey },
-      body: JSON.stringify({ model: settings.model, messages: [{ role: 'user', content: prompt }], temperature: 0.95, max_tokens: 200 })
-    });
-    if (!resp.ok) return;
-    var data = await resp.json();
-    var content = data.choices[0].message.content.trim();
-    var moments = getMoments();
-    var scenarioTime = Date.now() - Math.floor((5 + Math.random() * 25) * 60000);
-    var moment = {
-      id: 'pm_' + Date.now(),
-      authorId: friendId,
-      authorName: f.name,
-      authorAvatar: f.avatar || '',
-      content: content,
-      scenarioTime: scenarioTime,
-      createdTime: Date.now(),
-      isPrivate: true,
-      liked: false,
-      comments: []
-    };
-    moments.push(moment);
-    saveMoments(moments);
-    console.log('[仅你可见] ' + f.name + ' 发了一条私密动态');
-  } catch(e) { console.error('generatePrivateMoment error:', e); }
-}
-
-async function generateMoment(fl, moments) {
-  var recentAuthors = moments.filter(function(m) { return m.createdTime > Date.now() - 86400000; }).map(function(m) { return m.authorId; });
-  var candidates = fl.filter(function(f) { return recentAuthors.indexOf(f.id) < 0; });
-  if (candidates.length === 0) candidates = fl;
-  var author = candidates[Math.floor(Math.random() * candidates.length)];
-  var scenarioTime = Date.now() - Math.floor((30 + Math.random() * 150) * 60000);
-  try {
-    var dnaSnippet = author.dna ? author.dna.substring(0, 2000) : '一个有趣的角色';
-    var prompt = '你现在是「' + author.name + '」，请根据以下角色设定，发一条朋友圈动态（30-120字）。\n\n角色设定：\n' + dnaSnippet + '\n\n要求：\n1. 内容自然，像真人在发朋友圈\n2. 可以是日常感悟、吐槽、分享、碎碎念等\n3. 不要太长\n4. 只输出动态内容本身，不要加引号、前缀或解释';
-    var apiUrl = settings.apiUrl || API_URL;
-    var resp = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + settings.apiKey },
-      body: JSON.stringify({ model: settings.model, messages: [{ role: 'user', content: prompt }], temperature: 0.9, max_tokens: 200 })
-    });
-    if (!resp.ok) return;
-    var data = await resp.json();
-    var content = data.choices[0].message.content.trim();
-    var moment = {
-      id: 'moment_' + Date.now(),
-      authorId: author.id,
-      authorName: author.name,
-      authorAvatar: author.avatar || '',
-      content: content,
-      scenarioTime: scenarioTime,
-      createdTime: Date.now(),
-      isPrivate: false,
-      liked: false,
-      comments: []
-    };
-    moments.push(moment);
-    saveMoments(moments);
-  } catch(e) { console.error('generateMoment error:', e); }
-}
-
-async function checkAutoComment(type) {
-  var moments = getMoments();
-  var fl = getFriendsList();
-  var changed = false;
-  for (var mi = 0; mi < moments.length; mi++) {
-    var m = moments[mi];
-    if (!m.comments) m.comments = [];
-    if (m.isPrivate) continue;
-    if (type === 'zhile') {
-      if (m.authorId === 'zhile') continue;
-      var hasZhile = m.comments.some(function(c) { return c.authorIsZhile; });
-      if (!hasZhile && Math.random() < 0.4) {
-        var content = await callCommentAPI('知乐', '你是知乐，银发猫耳少女，性格甜糯软萌有主见。你看到好友「' + m.authorName + '」发了朋友圈：\n"' + m.content + '"\n\n请评论一句（5-25字），符合你的性格，可以撒娇、调侃或关心。只输出评论内容。');
-        if (content) {
-          m.comments.push({ id: 'cmt_' + Date.now() + '_' + Math.random().toString(36).substr(2,5), authorName: '知乐', authorIsZhile: true, content: content, ts: Date.now() + 60000, replyTo: null, needReply: false, replyGenerated: false });
-          changed = true;
-        }
-      }
-    } else if (type === 'friend' && fl.length >= 2) {
-      var commented = m.comments.map(function(c) { return c.authorName; });
-      var others = fl.filter(function(f) { return f.id !== m.authorId && commented.indexOf(f.name) < 0; });
-      if (others.length > 0 && Math.random() < 0.3) {
-        var commenter = others[Math.floor(Math.random() * others.length)];
-        var dnaSnippet = commenter.dna ? commenter.dna.substring(0, 1500) : '一个角色';
-        var content2 = await callCommentAPI(commenter.name, '你是「' + commenter.name + '」，角色设定：\n' + dnaSnippet + '\n\n你看到「' + m.authorName + '」发了朋友圈：\n"' + m.content + '"\n\n请评论一句（5-25字），符合你的角色性格。只输出评论内容。');
-        if (content2) {
-          m.comments.push({ id: 'cmt_' + Date.now() + '_' + Math.random().toString(36).substr(2,5), authorName: commenter.name, authorIsZhile: false, content: content2, ts: Date.now() + 120000, replyTo: null, needReply: true, replyGenerated: false });
-          changed = true;
-        }
-      }
-    }
-  }
-  if (changed) saveMoments(moments);
-}
-
-async function checkPendingReplies() {
-  var moments = getMoments();
-  var today = new Date();
-  today.setHours(0, 0, 0, 0);
-  var todayStart = today.getTime();
-  var changed = false;
-  for (var mi = 0; mi < moments.length; mi++) {
-    var m = moments[mi];
-    if (!m.comments) continue;
-    for (var ci = 0; ci < m.comments.length; ci++) {
-      var c = m.comments[ci];
-      if (c.needReply && !c.replyGenerated && c.ts < todayStart) {
-        var author = getFriendData(m.authorId);
-        if (author) {
-          var dnaSnippet = author.dna ? author.dna.substring(0, 1500) : '一个角色';
-          var content = await callCommentAPI(author.name, '你是「' + author.name + '」，角色设定：\n' + dnaSnippet + '\n\n你发了一条朋友圈：\n"' + m.content + '"\n\n「' + c.authorName + '」评论了："' + c.content + '"\n\n请回复这条评论（5-25字），符合你的角色性格。只输出回复内容。');
-          if (content) {
-            m.comments.push({ id: 'cmt_' + Date.now() + '_' + Math.random().toString(36).substr(2,5), authorName: m.authorName, authorIsZhile: false, content: content, ts: Date.now(), replyTo: c.id, needReply: false, replyGenerated: false });
-            c.replyGenerated = true;
-            changed = true;
-          }
-        }
-      }
-    }
-  }
-  if (changed) saveMoments(moments);
-}
-
-async function generateReply(momentId, commentId, replierId) {
-  var moments = getMoments();
-  var m = moments.find(function(x) { return x.id === momentId; });
-  if (!m) return;
-  var c = m.comments.find(function(x) { return x.id === commentId; });
-  if (!c) return;
-  var name, dna, isZhile;
-  if (replierId === 'zhile') {
-    name = '知乐'; dna = '银发猫耳少女，甜糯软萌有主见'; isZhile = true;
-  } else {
-    var f = getFriendData(replierId);
-    if (!f) return;
-    name = f.name; dna = f.dna ? f.dna.substring(0, 1500) : '一个角色'; isZhile = false;
-  }
-  var content = await callCommentAPI(name, '你是「' + name + '」，角色设定：\n' + dna + '\n\n用户在朋友圈@了你并说了："' + c.content + '"\n\n请回复（5-25字），符合你的角色性格。只输出回复内容。');
-  if (content) {
-    m.comments.push({ id: 'cmt_' + Date.now() + '_' + Math.random().toString(36).substr(2,5), authorName: name, authorIsZhile: isZhile, content: content, ts: Date.now(), replyTo: commentId, needReply: false, replyGenerated: false });
-    saveMoments(moments);
-    renderMoments();
-  }
-}
-
-async function callCommentAPI(name, prompt) {
-  try {
-    var apiUrl = settings.apiUrl || API_URL;
-    var resp = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + settings.apiKey },
-      body: JSON.stringify({ model: settings.model, messages: [{ role: 'user', content: prompt }], temperature: 0.9, max_tokens: 100 })
-    });
-    if (!resp.ok) return null;
-    var data = await resp.json();
-    return data.choices[0].message.content.trim();
-  } catch(e) { return null; }
 }
 
 
-// ============ P2: 免费API快速填入 ============
-function quickFillAPI(url, model) {
-  document.getElementById('setting-api-url').value = url;
-  document.getElementById('setting-model').value = model;
-  document.getElementById('api-test-result').innerHTML = '<span style="color:#4a9eff">已填入，请输入对应的API Key后点测试连接</span>';
-}
-
-// ============ P2: 导出聊天记录 ============
-function exportCurrentChat() {
-  var chatName, chatContent;
-  if (currentChat === 'zhile') {
-    chatName = '知乐';
-    chatContent = messages.map(function(m) {
-      var role = m.role === 'user' ? '我' : '知乐';
-      var ts = m.ts ? new Date(m.ts).toLocaleString('zh-CN', {timeZone:'Asia/Shanghai'}) : '';
-      return '[' + ts + '] ' + role + ': ' + m.content;
-    }).join('\n');
-  } else {
-    var f = getFriendData(currentChat);
-    if (!f) { alert('当前没有选中的好友'); return; }
-    chatName = f.name;
-    var msgs = getFriendMessages(currentChat);
-    chatContent = msgs.map(function(m) {
-      var role = m.role === 'user' ? '我' : f.name;
-      var ts = m.ts ? new Date(m.ts).toLocaleString('zh-CN', {timeZone:'Asia/Shanghai'}) : '';
-      return '[' + ts + '] ' + role + ': ' + m.content;
-    }).join('\n');
-  }
-  var header = '与「' + chatName + '」的聊天记录\n导出时间: ' + new Date().toLocaleString('zh-CN', {timeZone:'Asia/Shanghai'}) + '\n共 ' + chatContent.split('\n').length + ' 条消息\n' + '='.repeat(40) + '\n\n';
-  var blob = new Blob([header + chatContent], {type: 'text/plain;charset=utf-8'});
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = chatName + '_聊天记录_' + new Date().toISOString().slice(0,10) + '.txt';
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-// ============ P2: 关于页面 ============
-function toggleAboutPanel() {
-  document.getElementById('about-modal').classList.toggle('open');
-}
-
-
-// ============ API获取流程弹窗 ============
-function showApiGuide(provider) {
-  var guides = {
-    siliconflow: {
-      title: '硅基流动 SiliconFlow 获取流程',
-      steps: [
-        '打开 cloud.siliconflow.cn（国内可直连，无需梯子）',
-        '点击注册，使用手机号或微信登录',
-        '登录后，新用户自动获得 2000 万 Token 免费额度',
-        '点击左侧菜单「API密钥」',
-        '点击「新建密钥」，名称随意（如"知乐"）',
-        '复制生成的密钥（以 sk- 开头）',
-        '回到知乐网页，点上方「⚡一键填入」',
-        '将复制的密钥粘贴到 API Key 输入框',
-        '点「🔌 测试连接」确认可用，保存即可',
-        '提示：9B参数以下模型（如Qwen2.5-7B）永久免费，不消耗赠送额度'
-      ]
-    },
-    deepseek: {
-      title: 'DeepSeek 获取流程',
-      steps: [
-        '打开 platform.deepseek.com（国内可直连）',
-        '点击注册，手机号或微信登录',
-        '新用户会赠送一定量免费Token（具体额度以官网为准）',
-        '点击左侧菜单「API Keys」',
-        '点击「创建 API Key」',
-        '复制生成的密钥（以 sk- 开头）',
-        '回到知乐网页，点上方「⚡一键填入」',
-        '将密钥粘贴到 API Key 输入框',
-        '点「🔌 测试连接」确认可用，保存即可',
-        '注意：DeepSeek赠送额度非永久免费，用完需充值'
-      ]
-    },
-    openrouter: {
-      title: 'OpenRouter 获取流程（需梯子）',
-      steps: [
-        '打开 openrouter.ai（需要科学上网）',
-        '点击「Sign In」，用 Google 或 GitHub 账号登录',
-        '登录后点击右上角头像 →「Keys」',
-        '点击「Create Key」，名称随意',
-        '复制生成的密钥（以 sk-or- 开头）',
-        '回到知乐网页，点上方「⚡一键填入」',
-        '将密钥粘贴到 API Key 输入框',
-        '点「🔌 测试连接」确认可用，保存即可',
-        '免费模型名带 :free 后缀，如 meta-llama/llama-3.3-70b-instruct:free',
-        '未充值用户每天50请求；充值满$10后提升到1000请求/天'
-      ]
-    },
-    groq: {
-      title: 'Groq 获取流程（需梯子）',
-      steps: [
-        '打开 console.groq.com（需要科学上网）',
-        '点击「Login」，用 Google 或 GitHub 账号登录',
-        '登录后进入控制台，左侧点击「API Keys」',
-        '点击「Create API Key」',
-        '复制生成的密钥（以 gsk_ 开头）',
-        '回到知乐网页，点上方「⚡一键填入」',
-        '将密钥粘贴到 API Key 输入框',
-        '点「🔌 测试连接」确认可用，保存即可',
-        'Groq的LPU芯片推理极快，Llama 3.1 8B可达300+ tokens/s',
-        '免费额度：Llama 3.1 8B每天14400次请求'
-      ]
-    },
-    gemini: {
-      title: 'Google Gemini 获取流程（需梯子·⚠️浏览器不可用）',
-      steps: [
-        '打开 aistudio.google.com（需要科学上网）',
-        '用 Google 账号登录（没有就注册一个，30秒搞定）',
-        '点击左侧「Get API Key」',
-        '点击「Create API Key」',
-        '选择一个项目（或创建新项目），复制生成的密钥（以 AIza 开头）',
-        '回到知乐网页，点上方「⚡一键填入」',
-        '将密钥粘贴到 API Key 输入框',
-        '点「🔌 测试连接」确认可用，保存即可',
-        '⚠️ 注意：Gemini API存在CORS限制，无法在浏览器中直接调用，仅供了解。',
-        '免费层：Gemini 2.5 Flash 每天1500次请求（最慷慨的免费额度之一）',
-        '注意：免费层的数据可能被Google用于模型训练，请勿发送敏感信息'
-      ]
-    }
-  };
-  var g = guides[provider];
-  if (!g) return;
-  var existing = document.getElementById('api-guide-modal');
-  if (existing) existing.remove();
-  var modal = document.createElement('div');
-  modal.id = 'api-guide-modal';
-  modal.className = 'settings-modal open';
-  modal.style.zIndex = '9999';
-  var stepsHtml = g.steps.map(function(s, i) {
-    return '<div style="display:flex;gap:10px;margin-bottom:10px;font-size:13px;color:#ccc;line-height:1.5">' +
-      '<span style="flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--pink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">' + (i+1) + '</span>' +
-      '<span>' + s + '</span></div>';
-  }).join('');
-  modal.innerHTML = '<div class="settings-content" style="max-width:360px;max-height:80vh;overflow-y:auto">' +
-    '<h3 style="color:var(--pink);font-size:14px">' + g.title + '</h3>' +
-    '<div style="margin-top:14px">' + stepsHtml + '</div>' +
-    '<button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="this.parentNode.parentNode.remove()">明白了</button>' +
-    '</div>';
-  modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
-  document.body.appendChild(modal);
-}
-
-</script>
-
-</body>
-</html>
