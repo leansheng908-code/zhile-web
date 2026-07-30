@@ -1174,8 +1174,8 @@ async function reportGrowthToRemote(event) {
 
 async function fetchRemoteEvents() {
   try {
-    const headers = GITHUB_DATA_TOKEN ? { 'Authorization': `Bearer ${GITHUB_DATA_TOKEN}` } : {};
-    const listRes = await fetch(GITHUB_EVENTS_API, { headers });
+    // 公开仓库读取不需要Authorization头，避免触发CORS预检
+    const listRes = await fetch(GITHUB_EVENTS_API);
     if (!listRes.ok) throw new Error('API ' + listRes.status);
     const files = await listRes.json();
     const allEvents = [];
