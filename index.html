@@ -3391,6 +3391,8 @@ async function sendFriendMessage() {
     document.getElementById('send-btn').disabled = false;
     hideTyping();
     scrollToBottom();
+    // 检测私密话题，触发仅你可见动态
+    checkPrivateMoment(currentChat, text, reply);
   }
 }
 
@@ -3652,11 +3654,12 @@ function renderMoments() {
   moments.sort(function(a, b) { return b.scenarioTime - a.scenarioTime; });
   var htmlStr = '';
   moments.forEach(function(m) {
-    var privateBadge = m.isPrivate ? ' <span style="font-size:10px;color:#999;background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px">🔒仅你可见</span>' : '';
+    var privateBadge = m.isPrivate ? ' <span style="font-size:10px;color:#ff6b9d;background:rgba(255,107,157,.12);padding:1px 5px;border-radius:4px">🔒仅你可见</span>' : '';
+    var momentBg = m.isPrivate ? 'background:rgba(255,107,157,.06);border:1px solid rgba(255,107,157,.12)' : 'background:rgba(255,183,197,.04)';
     var avatarHtml = m.authorAvatar
       ? '<img src="' + m.authorAvatar + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover" onerror="this.style.display=\'none\';this.parentElement.textContent=\'🐱\'">'
       : '<div style="width:36px;height:36px;border-radius:50%;background:var(--pink);display:flex;align-items:center;justify-content:center;font-size:16px">🐱</div>';
-    htmlStr += '<div style="background:rgba(255,183,197,.04);border-radius:14px;padding:14px;margin-bottom:12px">';
+    htmlStr += '<div style="' + momentBg + ';border-radius:14px;padding:14px;margin-bottom:12px">';
     htmlStr += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
     htmlStr += avatarHtml;
     htmlStr += '<div><div style="color:#4a9eff;font-size:13px;font-weight:600">' + escapeHtml(m.authorName) + privateBadge + '</div>';
@@ -3760,7 +3763,7 @@ async function checkMomentsGeneration() {
     var today = new Date();
     today.setHours(0, 0, 0, 0);
     var todayStart = today.getTime();
-    var todayMoments = moments.filter(function(m) { return m.createdTime >= todayStart; });
+    var todayMoments = moments.filter(function(m) { return m.createdTime >= todayStart && !m.isPrivate; });
     var lastTime = moments.length > 0 ? Math.max.apply(null, moments.map(function(m) { return m.createdTime; })) : 0;
     // 生成新动态
     if (todayMoments.length < 3 && now - lastTime > 3 * 3600000) {
@@ -3779,6 +3782,70 @@ async function checkMomentsGeneration() {
     if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.textContent = '🔄 刷新'; }
     renderMoments();
   }
+}
+
+
+// ============ 仅你可见动态 ============
+function checkPrivateMoment(friendId, userText, friendReply) {
+  // 私密话题关键词检测
+  var privateKeywords = /喜欢|爱你|想你|陪你|一个人|心事|秘密|告白|在乎|温暖|孤独|害怕|依赖|信任|软弱|眼泪|哭|心里话|一直在|不会离开|舍不得|最重要|舍不得你|守护|心动|撒娇|抱抱|牵手|亲吻|想念|牵挂|放不下|舍不得走/;
+  var combined = userText + ' ' + (friendReply || '');
+  if (!privateKeywords.test(combined)) return;
+  
+  // 每个好友每天最多1条仅你可见
+  var moments = getMoments();
+  var today = new Date(); today.setHours(0,0,0,0);
+  var todayStart = today.getTime();
+  var hasPrivateToday = moments.some(function(m) {
+    return m.isPrivate && m.authorId === friendId && m.createdTime >= todayStart;
+  });
+  if (hasPrivateToday) return;
+  
+  // 30%概率触发（不是每次聊到都发）
+  if (Math.random() > 0.3) return;
+  
+  // 异步生成，不阻塞聊天
+  setTimeout(function() { generatePrivateMoment(friendId, userText, friendReply); }, 2000);
+}
+
+async function generatePrivateMoment(friendId, userText, friendReply) {
+  var f = getFriendData(friendId);
+  if (!f) return;
+  try {
+    var dnaSnippet = f.dna ? f.dna.substring(0, 2000) : '一个有趣的角色';
+    var prompt = '你是「' + f.name + '」。你刚刚和一位重要的人聊了一些私密/亲密的话题。\n\n'
+      + '对方说了：「' + userText.substring(0, 200) + '」\n'
+      + '你回复了：「' + (friendReply || '').substring(0, 200) + '」\n\n'
+      + '角色设定：' + dnaSnippet + '\n\n'
+      + '请发一条「仅你可见」的朋友圈动态，像是只对那个人说的话（30-100字）。\n'
+      + '要求：\n1. 语气私密、温柔或带点小害羞\n2. 像是深夜发给特定的人看的\n3. 不要太直白地复述对话，而是表达此刻的心情\n4. 只输出动态内容本身';
+    var apiUrl = settings.apiUrl || API_URL;
+    var resp = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + settings.apiKey },
+      body: JSON.stringify({ model: settings.model, messages: [{ role: 'user', content: prompt }], temperature: 0.95, max_tokens: 200 })
+    });
+    if (!resp.ok) return;
+    var data = await resp.json();
+    var content = data.choices[0].message.content.trim();
+    var moments = getMoments();
+    var scenarioTime = Date.now() - Math.floor((5 + Math.random() * 25) * 60000);
+    var moment = {
+      id: 'pm_' + Date.now(),
+      authorId: friendId,
+      authorName: f.name,
+      authorAvatar: f.avatar || '',
+      content: content,
+      scenarioTime: scenarioTime,
+      createdTime: Date.now(),
+      isPrivate: true,
+      liked: false,
+      comments: []
+    };
+    moments.push(moment);
+    saveMoments(moments);
+    console.log('[仅你可见] ' + f.name + ' 发了一条私密动态');
+  } catch(e) { console.error('generatePrivateMoment error:', e); }
 }
 
 async function generateMoment(fl, moments) {
@@ -3823,6 +3890,7 @@ async function checkAutoComment(type) {
   for (var mi = 0; mi < moments.length; mi++) {
     var m = moments[mi];
     if (!m.comments) m.comments = [];
+    if (m.isPrivate) continue;
     if (type === 'zhile') {
       if (m.authorId === 'zhile') continue;
       var hasZhile = m.comments.some(function(c) { return c.authorIsZhile; });
