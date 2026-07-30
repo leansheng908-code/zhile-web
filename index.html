@@ -4141,18 +4141,42 @@ async function sendGroupMessage(){
     msgs = JSON.parse(localStorage.getItem('zhile_gc_' + currentGroupId) || '[]');
     var addedReply = false;
     try {
-      // 清理markdown标记和多余字符
+      // 方案1: 先尝试regex直接提取 name/text 对（最抗错）
       var cleaned = reply.replace(/```json\s*/g, '').replace(/```/g, '').trim();
-      var jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-      var jsonStr = jsonMatch ? jsonMatch[0] : cleaned;
-      // 尝试修复常见JSON错误（多余的右括号等）
-      jsonStr = jsonStr.replace(/\)\s*}/g, '}').replace(/\)\s*]/g, ']');
-      var parsed = JSON.parse(jsonStr);
-      var replies = parsed.replies || [];
-      for(var i = 0; i < replies.length && i < 2; i++){
-        // 兼容多种键名: character/角色/name, content/内容/text
-        var charName = (replies[i].character || replies[i].name || replies[i]['\u89d2\u8272'] || '').trim();
-        var charContent = (replies[i].content || replies[i].text || replies[i]['\u5185\u5bb9'] || '').trim();
+      // 提取所有 "name":"xxx" 和 "text":"xxx" 对
+      var nameMatches = cleaned.match(/"name"\s*:\s*"([^"]+)"/g) || [];
+      var textMatches = cleaned.match(/"text"\s*:\s*"([^"]+)"/g) || [];
+      var extractedReplies = [];
+      for(var ri = 0; ri < nameMatches.length && ri < textMatches.length; ri++){
+        var nm = nameMatches[ri].match(/"name"\s*:\s*"([^"]+)"/);
+        var tx = textMatches[ri].match(/"text"\s*:\s*"([^"]+)"/);
+        if(nm && tx) extractedReplies.push({ name: nm[1], text: tx[1] });
+      }
+      // 方案2: regex没提到，尝试JSON.parse（修复常见错误后）
+      if(extractedReplies.length === 0){
+        var jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+        if(jsonMatch){
+          var jsonStr = jsonMatch[0]
+            .replace(/,\s*,/g, ',')     // 双逗号
+            .replace(/,\s*}/g, '}')     // 尾逗号
+            .replace(/,\s*]/g, ']')     // 尾逗号
+            .replace(/}\s*}\s*$/g, '}') // 多余闭合
+            .replace(/\]\s*}\s*$/g, ']');
+          try {
+            var parsed = JSON.parse(jsonStr);
+            var replies = parsed.replies || [];
+            for(var rj = 0; rj < replies.length; rj++){
+              var rn = replies[rj].name || replies[rj].character || '';
+              var rt = replies[rj].text || replies[rj].content || '';
+              if(rn && rt) extractedReplies.push({ name: rn, text: rt });
+            }
+          } catch(e2) {}
+        }
+      }
+      // 处理提取到的回复
+      for(var i = 0; i < extractedReplies.length && i < 2; i++){
+        var charName = extractedReplies[i].name.trim();
+        var charContent = extractedReplies[i].text.trim();
         if(!charContent) continue;
         var memberId = 'zhile';
         if(charName !== '知乐' && !charName.includes('知乐')){
@@ -4177,10 +4201,9 @@ async function sendGroupMessage(){
         renderGroupMessages();
       }
     } catch(e) {
-      // JSON解析彻底失败，把清理后的文本当知乐消息（截断到合理长度）
-      var fallback = reply.replace(/```json\s*/g, '').replace(/```/g, '').trim().substring(0, 150);
+      // 彻底失败，知乐兜底（不显示原始JSON）
       msgs = JSON.parse(localStorage.getItem('zhile_gc_' + currentGroupId) || '[]');
-      msgs.push({ role:'zhile', content: fallback, ts:Date.now() });
+      msgs.push({ role:'zhile', content: '呃...刚才说到一半脚滑了，亲爱的再说一次～', ts:Date.now() });
       localStorage.setItem('zhile_gc_' + currentGroupId, JSON.stringify(msgs));
       renderGroupMessages();
     }
