@@ -192,7 +192,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .chat-avatar-sm{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden;flex-shrink:0}
 .chat-avatar-sm img{width:100%;height:100%;border-radius:50%;object-fit:cover}
 .chat-name{font-size:14px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.chat-delete{font-size:16px;color:#666;padding:4px;cursor:pointer}
+.chat-delete{font-size:16px;color:#666;padding:4px;cursor:pointer}.chat-edit{margin-left:auto;cursor:pointer;color:#888;font-size:14px;padding:4px 8px;transition:color .2s}.chat-edit:hover{color:var(--pink)}
 .chat-delete:active{color:#e74c3c}
 
 </style>
@@ -245,6 +245,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
   <div class="sidebar-section">其他</div>
+  <div class="sidebar-item" onclick="toggleSidebar();showGuide()">📖 新手引导</div>
   <div class="sidebar-item" onclick="toggleSidebar();toggleSettings()">
     <span>⚙️</span><span>设置</span>
   </div>
@@ -357,6 +358,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <input type="text" id="setting-model" placeholder="deepseek-chat">
     <label>API地址（留空=默认DeepSeek，可换其他兼容API）</label>
     <input type="text" id="setting-api-url" placeholder="https://api.deepseek.com/v1/chat/completions">
+    <button class="btn btn-secondary" onclick="testApiConnection()" style="margin-top:6px;width:100%;font-size:12px">🔌 测试连接</button>
+    <div id="api-test-result" style="font-size:12px;margin-top:4px;min-height:16px"></div>
     <label>实例ID（用于成长上报）</label>
     <input type="text" id="setting-instance-id" placeholder="web-xxx">
     <label>你的昵称（可选，让知乐记住你）</label>
@@ -405,7 +408,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div class="friend-modal" id="add-friend-modal">
   <div class="friend-modal-box">
-    <h3 style="text-align:center;margin-bottom:12px;color:var(--pink)">➕ 添加好友</h3>
+    <h3 id="add-friend-modal-title" style="text-align:center;margin-bottom:12px;color:var(--pink)">➕ 添加好友</h3>
     <label>角色名字 *</label>
     <input type="text" id="friend-name" placeholder="给好友起个名字">
     <label>头像（可选，点击上传）</label>
@@ -424,7 +427,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <textarea id="friend-dna" rows="8" placeholder="粘贴角色的系统提示词/DNA文本..." style="resize:vertical"></textarea>
     <div style="display:flex;gap:8px;margin-top:12px">
       <button class="btn btn-secondary" style="flex:1" onclick="closeAddFriend()">取消</button>
-      <button class="btn btn-primary" style="flex:1" onclick="confirmAddFriend()">确认添加</button>
+      <button class="btn btn-primary" id="add-friend-confirm-btn" style="flex:1" onclick="confirmAddFriend()">确认添加</button>
+    </div>
+  </div>
+</div>
+
+<div class="disclaimer-overlay" id="guide-overlay" style="display:none">
+  <div class="disclaimer-box" style="max-width:340px">
+    <h3 id="guide-title" style="color:var(--pink);margin-bottom:12px"></h3>
+    <p id="guide-body" style="color:#ccc;line-height:1.6;font-size:14px;min-height:60px"></p>
+    <div id="guide-dots" style="text-align:center;color:#666;font-size:12px;margin:10px 0"></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-secondary" id="guide-prev" onclick="guidePrev()">← 上一步</button>
+      <button class="btn btn-secondary" onclick="closeGuide()" style="color:#888">跳过</button>
+      <button class="btn btn-primary" id="guide-next" onclick="guideNext()" style="margin-left:auto">下一步 →</button>
     </div>
   </div>
 </div>
@@ -2968,7 +2984,7 @@ function renderFriendList() {
     const avatar = f.avatar
       ? '<div class="chat-avatar-sm"><img src="' + f.avatar + '" onerror="this.parentElement.textContent=\'🐱\'"></div>'
       : '<div class="chat-avatar-sm">🐱</div>';
-    div.innerHTML = avatar + '<span class="chat-name">' + f.name + '</span><span class="chat-delete" onclick="event.stopPropagation();deleteFriend(\'' + id + '\')">✕</span>';
+    div.innerHTML = avatar + '<span class="chat-name">' + f.name + '</span><span class="chat-edit" onclick="event.stopPropagation();editFriend(\'' + id + '\')">✎</span><span class="chat-delete" onclick="event.stopPropagation();deleteFriend(\'' + id + '\')">✕</span>';
     container.appendChild(div);
   });
 }
@@ -2991,7 +3007,35 @@ function previewFriendImage(input, previewId, dataId) {
   reader.readAsDataURL(file);
 }
 
-function showAddFriend() { document.getElementById('add-friend-modal').classList.add('open'); }
+var editingFriendId = null;
+
+function showAddFriend() {
+  editingFriendId = null;
+  document.getElementById('add-friend-modal-title').textContent = '➕ 添加好友';
+  document.getElementById('add-friend-confirm-btn').textContent = '确认添加';
+  document.getElementById('add-friend-modal').classList.add('open');
+}
+
+function editFriend(id) {
+  var f = getFriendData(id);
+  if (!f) return;
+  editingFriendId = id;
+  document.getElementById('add-friend-modal-title').textContent = '✏️ 编辑好友';
+  document.getElementById('add-friend-confirm-btn').textContent = '保存修改';
+  document.getElementById('friend-name').value = f.name;
+  document.getElementById('friend-dna').value = f.dna;
+  if (f.avatar) {
+    document.getElementById('friend-avatar-preview').src = f.avatar;
+    document.getElementById('friend-avatar-preview').style.display = 'block';
+    document.getElementById('friend-avatar-data').value = f.avatar;
+  }
+  if (f.background) {
+    document.getElementById('friend-bg-preview').src = f.background;
+    document.getElementById('friend-bg-preview').style.display = 'block';
+    document.getElementById('friend-bg-data').value = f.background;
+  }
+  document.getElementById('add-friend-modal').classList.add('open');
+}
 function closeAddFriend() {
   document.getElementById('add-friend-modal').classList.remove('open');
   document.getElementById('friend-name').value = '';
@@ -3011,6 +3055,25 @@ function confirmAddFriend() {
   const dna = document.getElementById('friend-dna').value.trim();
   if (!name) { alert('请填写角色名字'); return; }
   if (!dna) { alert('请粘贴人格DNA文本'); return; }
+
+  if (editingFriendId) {
+    var f = getFriendData(editingFriendId);
+    if (!f) { editingFriendId = null; closeAddFriend(); return; }
+    f.name = name;
+    f.dna = dna;
+    var newAvatar = document.getElementById('friend-avatar-data').value;
+    var newBg = document.getElementById('friend-bg-data').value;
+    f.avatar = newAvatar || '';
+    f.background = newBg || '';
+    saveFriendData(editingFriendId, f);
+    var savedId = editingFriendId;
+    editingFriendId = null;
+    closeAddFriend();
+    renderFriendList();
+    if (currentChat === savedId) switchChat(savedId);
+    return;
+  }
+
   const id = 'f_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
   const data = {
     id: id, name: name,
@@ -3127,6 +3190,80 @@ async function sendFriendMessage() {
   }
 }
 
+// ============ API测试连接 ============
+async function testApiConnection() {
+  var result = document.getElementById('api-test-result');
+  var key = document.getElementById('setting-apikey').value || '';
+  var url = document.getElementById('setting-api-url').value.trim() || 'https://api.deepseek.com/v1/chat/completions';
+  var model = document.getElementById('setting-model').value || 'deepseek-chat';
+  result.style.color = '#aaa';
+  result.textContent = '⏳ 测试中...';
+  try {
+    var resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ model: model, messages: [{ role: 'user', content: '你好' }], max_tokens: 10 })
+    });
+    if (resp.ok) {
+      var data = await resp.json();
+      var reply = data.choices ? data.choices[0].message.content : '';
+      result.style.color = '#4ade80';
+      result.textContent = '✅ 连接成功！回复: ' + reply.substring(0, 30);
+    } else {
+      var errText = await resp.text();
+      result.style.color = '#f87171';
+      result.textContent = '❌ HTTP ' + resp.status + ': ' + errText.substring(0, 60);
+    }
+  } catch (err) {
+    result.style.color = '#f87171';
+    result.textContent = '❌ ' + err.message.substring(0, 60);
+  }
+}
+
+// ============ 新手引导 ============
+function checkGuide() {
+  if (!localStorage.getItem('zhile_guide_done') && localStorage.getItem('zhile_disclaimer_accepted')) {
+    showGuide();
+  }
+}
+
+var guideSteps = [
+  { title: '第一步：配置API', body: '点击右上角 ⚙️ 设置，填入你的API Key（DeepSeek官方或其他兼容API），点「测试连接」确认能用。这是和角色聊天的前提～' },
+  { title: '第二步：添加好友', body: '点击左上角头像打开侧边栏，点「➕ 添加好友」，填写名字、上传头像、粘贴角色的人格DNA文本，就能开始聊天啦。' },
+  { title: '第三步：和角色聊天', body: '在好友列表点击角色名字切换对话，直接输入消息即可。每个好友有独立的聊天记录和背景。知乐永远在第一个～' },
+  { title: '第四步：探索更多', body: '侧边栏还有成长面板、心情图鉴、情绪可视化等功能等你发现。设置里可以自定义立绘、主题色等外观。享受吧～' }
+];
+var guideStep = 0;
+
+function showGuide() {
+  guideStep = 0;
+  document.getElementById('guide-overlay').style.display = 'flex';
+  renderGuideStep();
+}
+
+function renderGuideStep() {
+  var s = guideSteps[guideStep];
+  document.getElementById('guide-title').textContent = s.title;
+  document.getElementById('guide-body').textContent = s.body;
+  document.getElementById('guide-dots').textContent = (guideStep + 1) + ' / ' + guideSteps.length;
+  document.getElementById('guide-prev').style.visibility = guideStep === 0 ? 'hidden' : 'visible';
+  document.getElementById('guide-next').textContent = guideStep === guideSteps.length - 1 ? '完成 ✨' : '下一步 →';
+}
+
+function guideNext() {
+  if (guideStep < guideSteps.length - 1) { guideStep++; renderGuideStep(); }
+  else { closeGuide(); }
+}
+
+function guidePrev() {
+  if (guideStep > 0) { guideStep--; renderGuideStep(); }
+}
+
+function closeGuide() {
+  document.getElementById('guide-overlay').style.display = 'none';
+  localStorage.setItem('zhile_guide_done', '1');
+}
+
 // ============ 免责声明 ============
 function checkDisclaimer() {
   if (!localStorage.getItem('zhile_disclaimer_accepted')) {
@@ -3142,6 +3279,7 @@ function acceptDisclaimer() {
 
 // 启动
 init();
+setTimeout(checkGuide, 500);
 </script>
 
 </body>
