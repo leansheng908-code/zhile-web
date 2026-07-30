@@ -4053,7 +4053,7 @@ function showApiGuide(provider) {
   modal.innerHTML = '<div class="settings-content" style="max-width:360px;max-height:80vh;overflow-y:auto">' +
     '<h3 style="color:var(--pink);font-size:14px">' + g.title + '</h3>' +
     '<div style="margin-top:14px">' + stepsHtml + '</div>' +
-    '<button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="this.closest(\\'.settings-modal\\').remove()">明白了</button>' +
+    '<button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="this.parentNode.parentNode.remove()">明白了</button>' +
     '</div>';
   modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
