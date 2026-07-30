@@ -4128,24 +4128,45 @@ async function sendGroupMessage(){
     var reply = data.choices[0].message.content;
     var typingEl = document.getElementById('gc-typing');
     if(typingEl) typingEl.remove();
+    // 重新读取最新消息（避免并发覆盖）
+    msgs = JSON.parse(localStorage.getItem('zhile_gc_' + currentGroupId) || '[]');
+    var addedReply = false;
     try {
       var jsonMatch = reply.match(/\{[\s\S]*\}/);
       var parsed = JSON.parse(jsonMatch ? jsonMatch[0] : reply);
       var replies = parsed.replies || [];
       for(var i = 0; i < replies.length && i < 2; i++){
-        var charName = replies[i].character || '';
-        var charContent = replies[i].content || '';
+        var charName = (replies[i].character || '').trim();
+        var charContent = (replies[i].content || '').trim();
+        if(!charContent) continue;
         var memberId = 'zhile';
-        if(charName !== '知乐'){
-          var found = friends.map(getFriendData).find(function(fd){ return fd && fd.name === charName; });
-          if(found) memberId = found.id; else continue;
+        // 模糊匹配角色名
+        if(charName !== '知乐' && !charName.includes('知乐')){
+          var found = null;
+          friends.forEach(function(fid){
+            var fd = getFriendData(fid);
+            if(fd && (fd.name === charName || fd.name.includes(charName) || charName.includes(fd.name))) found = fd;
+          });
+          if(found) memberId = found.id; else memberId = 'zhile'; // 匹配不到就归知乐
         }
         await new Promise(function(r){ setTimeout(r, i * 800); });
+        // 再次读取最新消息
+        msgs = JSON.parse(localStorage.getItem('zhile_gc_' + currentGroupId) || '[]');
         msgs.push({ role: memberId, content: charContent, ts: Date.now() });
+        localStorage.setItem('zhile_gc_' + currentGroupId, JSON.stringify(msgs));
+        renderGroupMessages();
+        addedReply = true;
+      }
+      // 如果解析成功但没有回复，知乐兜底
+      if(!addedReply){
+        msgs = JSON.parse(localStorage.getItem('zhile_gc_' + currentGroupId) || '[]');
+        msgs.push({ role:'zhile', content: '嗯...让我想想怎么回好呢～', ts:Date.now() });
         localStorage.setItem('zhile_gc_' + currentGroupId, JSON.stringify(msgs));
         renderGroupMessages();
       }
     } catch(e) {
+      // JSON解析失败，直接把原始回复当知乐消息
+      msgs = JSON.parse(localStorage.getItem('zhile_gc_' + currentGroupId) || '[]');
       msgs.push({ role:'zhile', content: reply.substring(0, 200), ts:Date.now() });
       localStorage.setItem('zhile_gc_' + currentGroupId, JSON.stringify(msgs));
       renderGroupMessages();
