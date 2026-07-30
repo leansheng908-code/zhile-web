@@ -478,7 +478,7 @@ const _gt4 = 'WpiFSi8RDBh1BNwgIF';
 const _gt5 = 'vkfQnjBMW3FZYRQPvJaXfB';
 const GITHUB_DATA_TOKEN = _gt1 + _gt2 + _gt3 + _gt4 + _gt5; // 细粒度token，仅zhile-data仓库contents:write
 const GITHUB_EVENTS_API = `https://api.github.com/repos/${GITHUB_DATA_OWNER}/${GITHUB_DATA_REPO}/contents/events/`;
-const GITHUB_RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_DATA_OWNER}/${GITHUB_DATA_REPO}/main/events/`;
+const GITHUB_RAW_BASE = `https://cdn.jsdelivr.net/gh/${GITHUB_DATA_OWNER}/${GITHUB_DATA_REPO}@main/events/`;
 
 // ============ 好感度等级 ============
 const AFFECTION_LEVELS = [
@@ -1224,6 +1224,7 @@ async function fetchRemoteEvents() {
     return allEvents;
   } catch (err) {
     console.log('远程事件加载失败:', err.message);
+    window._zhileRemoteError = err.message;
     return null;
   }
 }
@@ -1389,7 +1390,7 @@ async function loadGlobalSummary() {
   try {
     const allEvents = await fetchRemoteEvents();
     if (!allEvents || allEvents.length === 0) {
-      el.innerHTML = '<div style="color:#666;font-size:12px;text-align:center;padding:10px">暂无全局成长数据</div>';
+      el.innerHTML = '<div style="color:#666;font-size:12px;text-align:center;padding:10px">暂无全局成长数据' + (window._zhileRemoteError ? '<br><span style="color:#f00;font-size:11px">' + window._zhileRemoteError + '</span>' : '') + '</div>';
       return;
     }
     const instances = {};
