@@ -22,7 +22,7 @@ async function testPost(){
   try{
     const r=await fetch('https://zhile-growth.leansheng908.workers.dev/api/growth',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({instanceId:'test-browser-001',event:{type:'test',desc:'浏览器POST测试',timestamp:new Date().toISOString()}})
     });
     const t=await r.text();
