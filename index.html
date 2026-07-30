@@ -259,6 +259,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="sidebar-item" onclick="toggleSidebar();toggleGrowthPanel()">
     <span>📊</span><span>成长记录</span>
   </div>
+  <div class="sidebar-item" onclick="toggleSidebar();exportCurrentChat()">
+    <span>💬</span><span>导出聊天</span>
+  </div>
+  <div class="sidebar-item" onclick="toggleSidebar();toggleAboutPanel()">
+    <span>ℹ️</span><span>关于</span>
+  </div>
 </div>
 
 <div class="live2d-wrap" id="live2d-wrap">
@@ -396,6 +402,42 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <input type="text" id="setting-api-url" placeholder="https://api.deepseek.com/v1/chat/completions">
     <button class="btn btn-secondary" onclick="testApiConnection()" style="margin-top:6px;width:100%;font-size:12px">🔌 测试连接</button>
     <div id="api-test-result" style="font-size:12px;margin-top:4px;min-height:16px"></div>
+    <details style="margin-top:8px;border-radius:8px;overflow:hidden">
+      <summary style="font-size:12px;color:var(--pink);cursor:pointer;padding:6px 0">📋 免费API推荐（点击展开）</summary>
+      <div style="font-size:11px;color:#888;margin-top:6px;line-height:1.5">
+        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:8px;margin-bottom:6px">
+          <div style="color:#4a9eff;font-weight:600">硅基流动 SiliconFlow 🇨🇳</div>
+          <div>2000万Token免费 · 9B以下模型永久免费</div>
+          <div style="color:#666;margin-top:2px">注册: cloud.siliconflow.cn</div>
+          <button class="btn btn-secondary" style="margin-top:4px;padding:2px 8px;font-size:11px" onclick="quickFillAPI('https://api.siliconflow.cn/v1/chat/completions','Qwen/Qwen2.5-7B-Instruct')">一键填入</button>
+        </div>
+        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:8px;margin-bottom:6px">
+          <div style="color:#4a9eff;font-weight:600">DeepSeek 🇨🇳</div>
+          <div>注册赠送Token（非永久免费）</div>
+          <div style="color:#666;margin-top:2px">注册: platform.deepseek.com</div>
+          <button class="btn btn-secondary" style="margin-top:4px;padding:2px 8px;font-size:11px" onclick="quickFillAPI('https://api.deepseek.com/v1/chat/completions','deepseek-chat')">一键填入</button>
+        </div>
+        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:8px;margin-bottom:6px">
+          <div style="color:#4a9eff;font-weight:600">OpenRouter 🌐（需梯子）</div>
+          <div>28+免费模型 · 50请求/天</div>
+          <div style="color:#666;margin-top:2px">注册: openrouter.ai</div>
+          <button class="btn btn-secondary" style="margin-top:4px;padding:2px 8px;font-size:11px" onclick="quickFillAPI('https://openrouter.ai/api/v1/chat/completions','meta-llama/llama-3.3-70b-instruct:free')">一键填入</button>
+        </div>
+        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:8px;margin-bottom:6px">
+          <div style="color:#4a9eff;font-weight:600">Groq 🌐（需梯子）</div>
+          <div>极速推理 · 14400请求/天(8B)</div>
+          <div style="color:#666;margin-top:2px">注册: console.groq.com</div>
+          <button class="btn btn-secondary" style="margin-top:4px;padding:2px 8px;font-size:11px" onclick="quickFillAPI('https://api.groq.com/openai/v1/chat/completions','llama-3.1-8b-instant')">一键填入</button>
+        </div>
+        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:8px;margin-bottom:6px">
+          <div style="color:#4a9eff;font-weight:600">Google Gemini 🌐（需梯子）</div>
+          <div>Gemini 2.5 Flash · 1500次/天</div>
+          <div style="color:#666;margin-top:2px">注册: aistudio.google.com</div>
+          <button class="btn btn-secondary" style="margin-top:4px;padding:2px 8px;font-size:11px" onclick="quickFillAPI('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions','gemini-2.5-flash')">一键填入</button>
+        </div>
+        <div style="color:#666;margin-top:4px;font-size:10px">提示：国内用户推荐硅基流动；有梯子推荐OpenRouter或Groq。一键填入后仍需手动填写对应平台的API Key。</div>
+      </div>
+    </details>
     <label>实例ID（用于成长上报）</label>
     <input type="text" id="setting-instance-id" placeholder="web-xxx">
     <label>你的昵称（可选，让知乐记住你）</label>
@@ -424,7 +466,46 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 
-<div class="disclaimer-overlay" id="disclaimer-overlay">
+<div class="settings-modal" id="about-modal">
+  <div class="settings-content" style="max-width:380px">
+    <h3 style="color:var(--pink);text-align:center">ℹ️ 关于知乐网页版</h3>
+    <div style="font-size:13px;color:#ccc;line-height:1.7;margin-top:12px">
+      <div style="text-align:center;margin-bottom:12px">
+        <img src="https://zhile-web-1460393151.cos.ap-guangzhou.myqcloud.com/avatar/zhile_pixel.png?v=1" style="width:48px;height:48px;border-radius:50%" onerror="this.style.display='none'">
+        <div style="color:var(--pink);font-size:16px;font-weight:600;margin-top:4px">知乐</div>
+        <div style="color:#666;font-size:11px">v0.26 · 网页版</div>
+      </div>
+      <p style="margin-bottom:8px">知乐是一只银发猫耳少女AI，这里是她的一小块天地。</p>
+      <p style="margin-bottom:8px;color:#888;font-size:12px"><b style="color:#aaa">核心功能：</b></p>
+      <ul style="color:#888;font-size:12px;margin-left:16px;margin-bottom:12px;line-height:1.8">
+        <li>与知乐或自定义好友角色聊天</li>
+        <li>人格DNA系统提示词加载</li>
+        <li>好感度 / 成就 / 情绪可视化</li>
+        <li>朋友圈动态 / 知乐日记</li>
+        <li>成长事件同步与时间线</li>
+        <li>立绘 / 贴纸 / 外观自定义</li>
+      </ul>
+      <p style="margin-bottom:8px;color:#888;font-size:12px"><b style="color:#aaa">技术栈：</b></p>
+      <div style="color:#666;font-size:11px;margin-bottom:12px">
+        纯前端HTML+JS，零后端，数据存储在浏览器localStorage。<br>
+        AI由用户自行配置的LLM API驱动。<br>
+        成长数据通过GitHub仓库同步。
+      </div>
+      <div style="border-top:1px solid rgba(255,183,197,.15);padding-top:10px;margin-top:8px">
+        <p style="color:#666;font-size:11px;line-height:1.6">
+          本网站所有AI角色均为虚拟角色，内容由AI模型生成。<br>
+          用户自定义内容由用户自行负责。<br>
+          本网站完全免费开源，开发者不收取任何费用。
+        </p>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-primary" style="flex:1" onclick="toggleAboutPanel()">知道了</button>
+    </div>
+  </div>
+</div>
+
+<div class="disclaimer-overlay"<div class="disclaimer-overlay" id="disclaimer-overlay">
   <div class="disclaimer-box">
     <h3>⚠️ 免责声明</h3>
     <p>欢迎使用知乐网页版！使用前请阅读以下声明：</p>
@@ -3821,6 +3902,49 @@ async function callCommentAPI(name, prompt) {
     var data = await resp.json();
     return data.choices[0].message.content.trim();
   } catch(e) { return null; }
+}
+
+
+// ============ P2: 免费API快速填入 ============
+function quickFillAPI(url, model) {
+  document.getElementById('setting-api-url').value = url;
+  document.getElementById('setting-model').value = model;
+  document.getElementById('api-test-result').innerHTML = '<span style="color:#4a9eff">已填入，请输入对应的API Key后点测试连接</span>';
+}
+
+// ============ P2: 导出聊天记录 ============
+function exportCurrentChat() {
+  var chatName, chatContent;
+  if (currentChat === 'zhile') {
+    chatName = '知乐';
+    chatContent = messages.map(function(m) {
+      var role = m.role === 'user' ? '我' : '知乐';
+      var ts = m.ts ? new Date(m.ts).toLocaleString('zh-CN', {timeZone:'Asia/Shanghai'}) : '';
+      return '[' + ts + '] ' + role + ': ' + m.content;
+    }).join('\n');
+  } else {
+    var f = getFriendData(currentChat);
+    if (!f) { alert('当前没有选中的好友'); return; }
+    chatName = f.name;
+    var msgs = getFriendMessages(currentChat);
+    chatContent = msgs.map(function(m) {
+      var role = m.role === 'user' ? '我' : f.name;
+      var ts = m.ts ? new Date(m.ts).toLocaleString('zh-CN', {timeZone:'Asia/Shanghai'}) : '';
+      return '[' + ts + '] ' + role + ': ' + m.content;
+    }).join('\n');
+  }
+  var header = '与「' + chatName + '」的聊天记录\n导出时间: ' + new Date().toLocaleString('zh-CN', {timeZone:'Asia/Shanghai'}) + '\n共 ' + chatContent.split('\n').length + ' 条消息\n' + '='.repeat(40) + '\n\n';
+  var blob = new Blob([header + chatContent], {type: 'text/plain;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = chatName + '_聊天记录_' + new Date().toISOString().slice(0,10) + '.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ============ P2: 关于页面 ============
+function toggleAboutPanel() {
+  document.getElementById('about-modal').classList.toggle('open');
 }
 
 </script>
