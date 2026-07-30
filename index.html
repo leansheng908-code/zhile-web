@@ -166,7 +166,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 @keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
 .scroll-bottom-btn{position:fixed;bottom:72px;right:16px;width:40px;height:40px;border-radius:50%;background:var(--card);border:1px solid rgba(255,183,197,.2);color:var(--pink);font-size:18px;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 2px 12px rgba(0,0,0,.4);transition:all .2s}
 .scroll-bottom-btn:active{transform:scale(.85)}
-.copy-toast{position:fixed;bottom:80px;left:50%;background:var(--card);color:var(--pink);padding:8px 20px;border-radius:20px;font-size:12px;border:1px solid rgba(255,183,197,.2);z-index:9999;animation:toastShow 1.5s ease-out forwards;pointer-events:none}
+.copy-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--card);color:var(--pink);padding:8px 20px;border-radius:20px;font-size:14px;border:1px solid rgba(255,183,197,.2);z-index:9999;animation:toastShow 1.5s ease-out forwards;pointer-events:none;white-space:nowrap}
 @keyframes toastShow{0%{opacity:0;transform:translateX(-50%) translateY(10px)}20%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-5px)}}
 .heart-pop{position:fixed;pointer-events:none;font-size:24px;z-index:9999;animation:heartFloat 1.2s ease-out forwards}
 @keyframes heartFloat{0%{opacity:1;transform:scale(.3)}30%{transform:scale(1.2)}100%{opacity:0;transform:scale(1) translateY(-50px)}}
@@ -3874,14 +3874,9 @@ function updateGcSummary(){
 }
 
 function openGcCreateModal(){
-  try {
-    var modal = document.getElementById('gc-create-modal');
-    if(!modal){ showToast('错误：找不到创建群聊弹窗'); return; }
-    modal.classList.add('open');
-    showToast('创建群聊弹窗已打开');
-  } catch(e) {
-    showToast('弹窗错误: ' + e.message);
-  }
+  alert('DEBUG: 创建群聊弹窗正在打开!');
+  var modal = document.getElementById('gc-create-modal');
+  modal.classList.add('open');
   document.getElementById('gc-modal-title').textContent = '创建群聊';
   // 渲染好友列表
   var list = document.getElementById('gc-member-list');
@@ -3956,31 +3951,19 @@ function showGroupSettings(){
 }
 
 function openGroupChatPanel(){
-  try {
-    showToast('点击了群聊入口');
-    closeSidebar();
-    showToast('侧边栏已关闭，groups=' + zhile_groups.length);
-    if(zhile_groups.length === 0){
-      showToast('没有群聊，打开创建窗口');
-      openGcCreateModal();
-      return;
-    }
-    showToast('准备打开群聊: ' + zhile_groups[0].name);
-    openGroupChat(zhile_groups[0].id);
-    showToast('openGroupChat已调用');
-  } catch(e) {
-    showToast('群聊错误: ' + e.message);
-    console.error('openGroupChatPanel error:', e);
+  alert('DEBUG: 群聊入口被点击! groups=' + zhile_groups.length + ', friends=' + zhile_friends.length);
+  closeSidebar();
+  if(zhile_groups.length === 0){
+    openGcCreateModal();
+    return;
   }
+  openGroupChat(zhile_groups[0].id);
 }
 
 function openGroupChat(groupId){
-  try {
-    showToast('openGroupChat开始, groupId=' + groupId);
-    currentGroupId = groupId;
-    var group = zhile_groups.find(function(g){ return g.id === groupId; });
-    if(!group){ showToast('群聊不存在'); return; }
-    showToast('找到群聊: ' + group.name);
+  currentGroupId = groupId;
+  var group = zhile_groups.find(function(g){ return g.id === groupId; });
+  if(!group) return;
   closeSidebar();
   document.getElementById('group-chat-panel').classList.add('open');
   document.getElementById('gc-title-text').textContent = group.name;
