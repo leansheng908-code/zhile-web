@@ -265,10 +265,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <input type="text" id="setting-instance-id" placeholder="web-xxx">
     <label>你的昵称（可选，让知乐记住你）</label>
     <input type="text" id="setting-nickname" placeholder="给知乐一个名字记住你">
-    <div style="display:flex;gap:8px;margin-top:12px">
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
       <button class="btn btn-primary" onclick="saveSettings()">保存</button>
       <button class="btn btn-secondary" onclick="toggleSettings()">取消</button>
       <button class="btn btn-secondary" onclick="clearChat()" style="margin-left:auto;color:#e74c3c">清空对话</button>
+    </div>
+    <div style="border-top:1px solid rgba(255,255,255,.1);margin-top:12px;padding-top:10px">
+      <div style="font-size:11px;color:#888;margin-bottom:8px">换手机？导出数据到新设备</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" onclick="exportData()" style="flex:1">📤 导出数据</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()" style="flex:1">📥 导入数据</button>
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+      </div>
     </div>
   </div>
 </div>
@@ -2310,6 +2318,44 @@ function clearChat() {
   document.getElementById('messages').innerHTML = '';
   addSystemMsg('对话已清空。跟她重新打个招呼吧～');
   document.getElementById('settings-modal').classList.remove('open');
+}
+
+function exportData() {
+  const ZHILE_KEYS = ['zhile_settings','zhile_messages','zhile_growth','zhile_chat_count','zhile_achievements','zhile_emoji_collection','zhile_login_dates','zhile_secret_langs','zhile_affection','zhile_affection_log','zhile_daily_gain','zhile_last_login'];
+  const data = { _app: 'zhile-web', _version: '0.16', _exported: new Date().toISOString() };
+  ZHILE_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v !== null) data[k] = v; });
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'zhile-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  document.getElementById('settings-modal').classList.remove('open');
+  addSystemMsg('数据已导出！把文件传到新手机，在设置里点「导入数据」即可恢复～');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data._app !== 'zhile-web') { alert('这不是知乐的备份文件哦～'); return; }
+      if (!confirm('导入会覆盖当前所有数据，确定吗？')) return;
+      Object.keys(data).forEach(k => {
+        if (k.startsWith('_')) return;
+        localStorage.setItem(k, data[k]);
+      });
+      addSystemMsg('数据导入成功！正在刷新页面…');
+      setTimeout(() => location.reload(), 800);
+    } catch (err) {
+      alert('文件解析失败：' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
 }
 
 // ============ 事件绑定 ============
