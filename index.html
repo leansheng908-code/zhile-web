@@ -398,7 +398,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div style="font-size:14px;font-weight:700;color:var(--pink);margin-bottom:8px">📋 免费API推荐</div>
       <div style="font-size:12px;color:#999;margin-bottom:10px">没API Key？选一个平台注册，点"获取流程"看教程，再点"一键填入"自动配置。</div>
       <div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px;margin-bottom:8px">
-        <div style="font-size:13px;color:#4a9eff;font-weight:700">硅基流动 SiliconFlow 🇨🇳 <span style="font-size:11px;color:#52c41a">推荐</span></div>
+        <div style="font-size:13px;color:#4a9eff;font-weight:700">硅基流动 SiliconFlow 🇨🇳 <span style="font-size:11px;color:#52c41a">推荐·默认</span></div>
         <div style="font-size:12px;color:#aaa;margin-top:2px">2000万Token免费 · 9B以下模型永久免费 · 国内直连</div>
         <div style="display:flex;gap:6px;margin-top:8px">
           <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px" onclick="showApiGuide('siliconflow')">📖 获取流程</button>
@@ -439,12 +439,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
       <div style="font-size:11px;color:#666;margin-top:8px;line-height:1.5">💡 国内用户首选硅基流动；有梯子推荐OpenRouter或Groq。Gemini因CORS限制无法在浏览器中直接调用，仅作了解。一键填入后仍需手动填写API Key。</div>
     </div>
-    <label>API Key（DeepSeek）</label>
+    <label>API Key（默认硅基流动，可换其他）</label>
     <input type="password" id="setting-apikey" placeholder="sk-xxx">
     <label>模型</label>
-    <input type="text" id="setting-model" placeholder="deepseek-chat">
+    <input type="text" id="setting-model" placeholder="Qwen/Qwen2.5-7B-Instruct">
     <label>API地址（留空=默认DeepSeek，可换其他兼容API）</label>
-    <input type="text" id="setting-api-url" placeholder="https://api.deepseek.com/v1/chat/completions">
+    <input type="text" id="setting-api-url" placeholder="https://api.siliconflow.cn/v1/chat/completions">
     <button class="btn btn-secondary" onclick="testApiConnection()" style="margin-top:6px;width:100%;font-size:12px">🔌 测试连接</button>
     <div id="api-test-result" style="font-size:12px;margin-top:4px;min-height:16px"></div>
 
@@ -738,9 +738,9 @@ food = 油炸大鸡腿 / 伯爵红茶脆脆鲨威化
 
 <script>
 // ============ 配置 ============
-const DEFAULT_API_KEY = 'sk-338f4df9a6764cc88e9a7a41f79f3f0a';
-const DEFAULT_MODEL = 'deepseek-chat';
-const API_URL = 'https://api.deepseek.com/v1/chat/completions';
+const DEFAULT_API_KEY = 'sk-wvsccfvdujbfjeukvsdutfpofkmfceymjgnhrdfofuxhojzp';
+const DEFAULT_MODEL = 'Qwen/Qwen2.5-7B-Instruct';
+const API_URL = 'https://api.siliconflow.cn/v1/chat/completions';
 const GITHUB_DATA_OWNER = 'leansheng908-code';
 const GITHUB_DATA_REPO = 'zhile-data';
 const _gt1 = 'github_pat_11CKDJ';
@@ -3508,8 +3508,8 @@ function checkScheduledGreeting() {
 async function testApiConnection() {
   var result = document.getElementById('api-test-result');
   var key = document.getElementById('setting-apikey').value || '';
-  var url = document.getElementById('setting-api-url').value.trim() || 'https://api.deepseek.com/v1/chat/completions';
-  var model = document.getElementById('setting-model').value || 'deepseek-chat';
+  var url = document.getElementById('setting-api-url').value.trim() || 'https://api.siliconflow.cn/v1/chat/completions';
+  var model = document.getElementById('setting-model').value || 'Qwen/Qwen2.5-7B-Instruct';
   result.style.color = '#aaa';
   result.textContent = '⏳ 测试中...';
   try {
