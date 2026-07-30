@@ -1265,22 +1265,54 @@ async function reportGrowthToRemote(event) {
 }
 
 async function fetchRemoteEvents() {
+  // 双通道：优先GitHub API（实时），备用jsDelivr CDN（可能有缓存延迟）
+  // 通道1: GitHub API（带认证，实时数据）
   try {
-    // 方案B: 纯raw URL读取，完全绕开GitHub API（避免CORS问题）
-    // 1. 先获取索引文件
+    const idxRes = await fetch(GITHUB_EVENTS_API + 'index.json', {
+      headers: { 'Authorization': `Bearer ${GITHUB_DATA_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (idxRes.ok) {
+      const idxData = await idxRes.json();
+      const fileNames = JSON.parse(atob(idxData.content.replace(/\n/g, '')));
+      const allEvents = [];
+      for (const fn of fileNames) {
+        try {
+          const fRes = await fetch(GITHUB_EVENTS_API + fn, {
+            headers: { 'Authorization': `Bearer ${GITHUB_DATA_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' }
+          });
+          if (fRes.ok) {
+            const fData = await fRes.json();
+            const data = JSON.parse(atob(fData.content.replace(/\n/g, '')));
+            if (Array.isArray(data)) allEvents.push(...data);
+            else allEvents.push(data);
+          }
+        } catch (e) { /* skip */ }
+      }
+      console.log('远程事件加载(GitHub API):', allEvents.length, '条');
+      window._zhileRemoteError = null;
+      return allEvents;
+    }
+  } catch (apiErr) {
+    console.log('GitHub API读取失败，切换jsDelivr:', apiErr.message);
+  }
+  // 通道2: jsDelivr CDN（无认证，可能有缓存延迟）
+  try {
     const indexRes = await fetch(GITHUB_RAW_BASE + 'index.json?t=' + Date.now());
     if (!indexRes.ok) throw new Error('index ' + indexRes.status);
     const fileNames = await indexRes.json();
-    // 2. 逐个获取事件文件
     const allEvents = [];
     for (const fn of fileNames) {
       try {
-        const fileRes = await fetch(GITHUB_RAW_BASE + fn);
-        const data = await fileRes.json();
-        if (Array.isArray(data)) allEvents.push(...data);
-        else allEvents.push(data);
-      } catch (e) { /* skip bad file */ }
+        const fileRes = await fetch(GITHUB_RAW_BASE + fn + '?t=' + Date.now());
+        if (fileRes.ok) {
+          const data = await fileRes.json();
+          if (Array.isArray(data)) allEvents.push(...data);
+          else allEvents.push(data);
+        }
+      } catch (e) { /* skip */ }
     }
+    console.log('远程事件加载(jsDelivr):', allEvents.length, '条');
+    window._zhileRemoteError = null;
     return allEvents;
   } catch (err) {
     console.log('远程事件加载失败:', err.message);
@@ -1288,6 +1320,8 @@ async function fetchRemoteEvents() {
     return null;
   }
 }
+
+
 
 // ============ 成长事件检测 ============
 function detectGrowthEvent(text, role, emotion) {
