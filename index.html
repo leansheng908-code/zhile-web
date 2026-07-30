@@ -13,6 +13,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .header-info{flex:1;min-width:0}
 .header-name{font-size:15px;font-weight:600;color:var(--pink)}
 .header-status{font-size:11px;color:#888}
+.live2d-wrap{position:relative;flex-shrink:0;height:32vh;max-height:280px;min-height:160px;overflow:hidden;display:none;transition:height .3s ease}
+.live2d-wrap.show{display:block}
+.live2d-wrap img{width:100%;height:100%;object-fit:cover;object-position:center top;-webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,1) 60%,rgba(0,0,0,0) 100%);mask-image:linear-gradient(to bottom,rgba(0,0,0,1) 60%,rgba(0,0,0,0) 100%);animation:live2dBreathe 4s ease-in-out infinite,live2dFloat 3s ease-in-out infinite}
+.live2d-toggle{background:rgba(255,183,197,.1);border:none;border-radius:8px;padding:4px 8px;font-size:14px;cursor:pointer;flex-shrink:0;transition:all .2s}
+.live2d-toggle:hover{background:rgba(255,183,197,.2)}
+@keyframes live2dBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
+@keyframes live2dFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.live2d-sparkle{position:absolute;width:4px;height:4px;background:rgba(255,183,197,.6);border-radius:50%;pointer-events:none;animation:sparkleFloat 3s ease-in-out infinite}
+@keyframes sparkleFloat{0%{opacity:0;transform:translateY(0) scale(.5)}50%{opacity:1;transform:translateY(-20px) scale(1)}100%{opacity:0;transform:translateY(-40px) scale(.5)}}
 .affection-display{display:flex;flex-direction:column;gap:2px;min-width:80px;cursor:pointer}
 .affection-row{display:flex;align-items:center;gap:4px;font-size:11px}
 .affection-icon{font-size:13px}
@@ -183,6 +192,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="affection-bar-fill" id="aff-bar" style="width:0%"></div>
     </div>
   </div>
+  <button class="live2d-toggle" id="live2d-btn" onclick="toggleLive2d()">🎭</button>
   <button class="icon-btn" onclick="toggleSettings()">⚙️</button>
 </div>
 
@@ -210,6 +220,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
+<div class="live2d-wrap" id="live2d-wrap">
+  <img id="live2d-img" src="https://zhile-web-1460393151.cos.ap-guangzhou.myqcloud.com/live2d/zhile_default.jpg" alt="知乐立绘" loading="lazy">
+  <div class="live2d-sparkle" style="left:15%;bottom:20%;animation-delay:0s"></div>
+  <div class="live2d-sparkle" style="left:80%;bottom:30%;animation-delay:1s"></div>
+  <div class="live2d-sparkle" style="left:50%;bottom:10%;animation-delay:2s"></div>
+  <div class="live2d-sparkle" style="left:25%;bottom:50%;animation-delay:1.5s"></div>
+  <div class="live2d-sparkle" style="left:70%;bottom:60%;animation-delay:.5s"></div>
+</div>
 <div id="messages"></div>
 
 <div id="input-area">
@@ -631,7 +649,7 @@ function updateAffectionDisplay() {
 
 function checkDailyLogin() {
   const today = getTodayStr();
-  const lastLogin = localStorage.getItem('zhile_last_login');
+  const lastLogin = localStorage.getItem('zhile_last_login','zhile_live2d');
   if (lastLogin !== today) {
     localStorage.setItem('zhile_last_login', today);
     addAffection(2, '每日首次登录');
@@ -708,6 +726,11 @@ function init() {
     localStorage.setItem('zhile_emoji_collection', JSON.stringify(emojiCollection));
   }
   scrollToBottom();
+  // Restore live2d state
+  if (localStorage.getItem('zhile_live2d') === 'on') {
+    document.getElementById('live2d-wrap').classList.add('show');
+    document.getElementById('live2d-btn').style.background = 'rgba(255,183,197,.25)';
+  }
 }
 
 // ============ 日常事件 ============
@@ -2634,6 +2657,20 @@ function toggleSidebar() {
     const uid = document.getElementById('sidebar-uid');
     const name = settings.nickname ? settings.nickname + ' · ' : '';
     uid.textContent = name + settings.instanceId;
+  }
+}
+
+function toggleLive2d() {
+  const wrap = document.getElementById('live2d-wrap');
+  const btn = document.getElementById('live2d-btn');
+  if (wrap.classList.contains('show')) {
+    wrap.classList.remove('show');
+    btn.style.background = 'rgba(255,183,197,.1)';
+    localStorage.setItem('zhile_live2d', 'off');
+  } else {
+    wrap.classList.add('show');
+    btn.style.background = 'rgba(255,183,197,.25)';
+    localStorage.setItem('zhile_live2d', 'on');
   }
 }
 
