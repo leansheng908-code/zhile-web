@@ -743,12 +743,9 @@ const DEFAULT_MODEL = 'Qwen/Qwen2.5-7B-Instruct';
 const API_URL = 'https://api.siliconflow.cn/v1/chat/completions';
 const GITHUB_DATA_OWNER = 'leansheng908-code';
 const GITHUB_DATA_REPO = 'zhile-data';
-const _gt1 = 'github_pat_11CKDJ';
-const _gt2 = 'VAY0kaAXJXSav6tV_';
-const _gt3 = 'UK6z36yLawvzpWcGwAa';
-const _gt4 = 'WpiFSi8RDBh1BNwgIF';
-const _gt5 = 'vkfQnjBMW3FZYRQPvJaXfB';
-const GITHUB_DATA_TOKEN = _gt1 + _gt2 + _gt3 + _gt4 + _gt5; // 细粒度token，仅zhile-data仓库contents:write
+// 成长事件代理 - Cloudflare Worker (token藏在服务端，前端不可见)
+const GROWTH_PROXY_URL = 'https://zhile-growth-worker.your-subdomain.workers.dev';
+const GITHUB_DATA_TOKEN = ''; // 已迁移到Worker，前端不再持有token
 const GITHUB_EVENTS_API = `https://api.github.com/repos/${GITHUB_DATA_OWNER}/${GITHUB_DATA_REPO}/contents/events/`;
 const GITHUB_RAW_BASE = `https://cdn.jsdelivr.net/gh/${GITHUB_DATA_OWNER}/${GITHUB_DATA_REPO}@main/events/`;
 
@@ -1483,163 +1480,45 @@ function sanitizePII(text) {
 
 // ============ 远程成长事件同步（v2: 按实例聚合） ============
 async function reportGrowthToRemote(event) {
-  if (!GITHUB_DATA_TOKEN) return;
+  if (!GROWTH_PROXY_URL) return;
   try {
-    const filename = `${settings.instanceId}.json`;
-    let existingEvents = [];
-    let fileSha = null;
-    
-    // 1. 从GitHub API获取当前实例文件内容+SHA
-    try {
-      const getRes = await fetch(GITHUB_EVENTS_API + filename, {
-        headers: { 'Authorization': `Bearer ${GITHUB_DATA_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' }
-      });
-      if (getRes.ok) {
-        const fileData = await getRes.json();
-        existingEvents = JSON.parse(atob(fileData.content.replace(/\n/g, '')));
-        if (!Array.isArray(existingEvents)) existingEvents = [existingEvents];
-        fileSha = fileData.sha;
-      }
-    } catch(e) { console.warn('GET instance file via API failed:', e.message); }
-    
-    // 2. 如果API失败，从jsDelivr获取内容（无SHA）
-    if (fileSha === null) {
-      try {
-        const jRes = await fetch(GITHUB_RAW_BASE + filename + '?t=' + Date.now());
-        if (jRes.ok) {
-          existingEvents = await jRes.json();
-          if (!Array.isArray(existingEvents)) existingEvents = [existingEvents];
-        }
-      } catch(e) { /* 新实例，正常 */ }
-    }
-    
-    // 3. 追加新事件
-    existingEvents.push(event);
-    const content = btoa(unescape(encodeURIComponent(JSON.stringify(existingEvents, null, 2))));
-    
-    // 4. PUT到GitHub
-    const putBody = { message: `Growth: ${event.type} from ${settings.instanceId}`, content: content };
-    if (fileSha) putBody.sha = fileSha;
-    
-    const res = await fetch(GITHUB_EVENTS_API + filename, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${GITHUB_DATA_TOKEN}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(putBody)
+    const res = await fetch(GROWTH_PROXY_URL + '/api/growth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ instanceId: settings.instanceId, event: event })
     });
-    
     if (res.ok) {
-      console.log('\u2705 成长事件已上报远程');
-      // 5. 新实例需更新index.json
-      if (fileSha === null) {
-        try {
-          const idxRes = await fetch(GITHUB_EVENTS_API + 'index.json', {
-            headers: { 'Authorization': `Bearer ${GITHUB_DATA_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' }
-          });
-          if (idxRes.ok) {
-            const idxData = await idxRes.json();
-            let fileNames = JSON.parse(atob(idxData.content.replace(/\n/g, '')));
-            if (!fileNames.includes(filename)) {
-              fileNames.push(filename);
-              const idxContent = btoa(unescape(encodeURIComponent(JSON.stringify(fileNames))));
-              await fetch(GITHUB_EVENTS_API + 'index.json', {
-                method: 'PUT',
-                headers: {
-                  'Authorization': `Bearer ${GITHUB_DATA_TOKEN}`,
-                  'Accept': 'application/vnd.github.v3+json',
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ message: `Add instance: ${filename}`, content: idxContent, sha: idxData.sha })
-              });
-            }
-          }
-        } catch(e2) { console.warn('索引更新失败:', e2.message); }
-      }
-      // 6. Purge jsDelivr缓存
-      try {
-        await fetch('https://purge.jsdelivr.net/gh/' + GITHUB_DATA_OWNER + '/' + GITHUB_DATA_REPO + '@main/events/' + filename);
-        await fetch('https://purge.jsdelivr.net/gh/' + GITHUB_DATA_OWNER + '/' + GITHUB_DATA_REPO + '@main/events/index.json');
-        console.log('jsDelivr缓存已刷新');
-      } catch(e3) { console.warn('缓存刷新失败:', e3.message); }
-    } else if (res.status === 422) {
-      // SHA不匹配（多设备并发），回退到单独事件文件
-      console.warn('SHA不匹配，回退到单独事件文件');
-      const fbName = `${settings.instanceId}-${Date.now()}-${Math.random().toString(36).substr(2,4)}.json`;
-      const fbContent = btoa(unescape(encodeURIComponent(JSON.stringify([event], null, 2))));
-      await fetch(GITHUB_EVENTS_API + fbName, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${GITHUB_DATA_TOKEN}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: `Growth (fallback): ${event.type}`, content: fbContent })
-      });
+      console.log('\u2705 \u6210\u957f\u4e8b\u4ef6\u5df2\u4e0a\u62a5');
     } else {
-      console.warn('远程上报失败:', res.status);
+      console.warn('\u4e0a\u62a5\u5931\u8d25:', res.status);
     }
   } catch (e) {
-    console.warn('远程上报异常:', e);
+    console.warn('\u4e0a\u62a5\u5f02\u5e38:', e);
   }
 }
 
 async function fetchRemoteEvents() {
-  // 双通道：优先GitHub API（实时），备用jsDelivr CDN（可能有缓存延迟）
-  // 通道1: GitHub API（带认证，实时数据）
+  // 只用jsDelivr CDN读取，不需要token
   try {
-    const idxRes = await fetch(GITHUB_EVENTS_API + 'index.json', {
-      headers: { 'Authorization': `Bearer ${GITHUB_DATA_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' }
-    });
-    if (idxRes.ok) {
-      const idxData = await idxRes.json();
-      const fileNames = JSON.parse(atob(idxData.content.replace(/\n/g, '')));
-      const allEvents = [];
-      for (const fn of fileNames) {
-        try {
-          const fRes = await fetch(GITHUB_EVENTS_API + fn, {
-            headers: { 'Authorization': `Bearer ${GITHUB_DATA_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' }
-          });
-          if (fRes.ok) {
-            const fData = await fRes.json();
-            const data = JSON.parse(atob(fData.content.replace(/\n/g, '')));
-            if (Array.isArray(data)) allEvents.push(...data);
-            else allEvents.push(data);
-          }
-        } catch (e) { /* skip */ }
-      }
-      console.log('远程事件加载(GitHub API):', allEvents.length, '条');
-      window._zhileRemoteError = null;
-      return allEvents;
-    }
-  } catch (apiErr) {
-    console.log('GitHub API读取失败，切换jsDelivr:', apiErr.message);
-  }
-  // 通道2: jsDelivr CDN（无认证，可能有缓存延迟）
-  try {
-    const indexRes = await fetch(GITHUB_RAW_BASE + 'index.json?t=' + Date.now());
-    if (!indexRes.ok) throw new Error('index ' + indexRes.status);
-    const fileNames = await indexRes.json();
+    const idxRes = await fetch(GITHUB_RAW_BASE + 'index.json?t=' + Date.now());
+    if (!idxRes.ok) return [];
+    const fileNames = await idxRes.json();
     const allEvents = [];
     for (const fn of fileNames) {
       try {
-        const fileRes = await fetch(GITHUB_RAW_BASE + fn + '?t=' + Date.now());
-        if (fileRes.ok) {
-          const data = await fileRes.json();
-          if (Array.isArray(data)) allEvents.push(...data);
-          else allEvents.push(data);
+        const fRes = await fetch(GITHUB_RAW_BASE + fn + '?t=' + Date.now());
+        if (fRes.ok) {
+          const events = await fRes.json();
+          if (Array.isArray(events)) allEvents.push(...events);
         }
-      } catch (e) { /* skip */ }
+      } catch(e) { /* skip */ }
     }
-    console.log('远程事件加载(jsDelivr):', allEvents.length, '条');
-    window._zhileRemoteError = null;
     return allEvents;
-  } catch (err) {
-    console.log('远程事件加载失败:', err.message);
-    window._zhileRemoteError = err.message;
-    return null;
+  } catch(e) {
+    console.warn('读取远程事件失败:', e);
+    return [];
   }
 }
-
-
 
 // ============ 成长事件检测 ============
 function detectGrowthEvent(text, role, emotion) {
