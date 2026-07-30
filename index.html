@@ -394,6 +394,51 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="settings-modal" id="settings-modal">
   <div class="settings-content">
     <h3>⚙️ 设置</h3>
+    <div style="background:linear-gradient(135deg,rgba(255,107,157,.08),rgba(74,158,255,.08));border:1px solid rgba(255,107,157,.2);border-radius:12px;padding:14px;margin-bottom:14px">
+      <div style="font-size:14px;font-weight:700;color:var(--pink);margin-bottom:8px">📋 免费API推荐</div>
+      <div style="font-size:12px;color:#999;margin-bottom:10px">没API Key？选一个平台注册，点"获取流程"看教程，再点"一键填入"自动配置。</div>
+      <div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px;margin-bottom:8px">
+        <div style="font-size:13px;color:#4a9eff;font-weight:700">硅基流动 SiliconFlow 🇨🇳 <span style="font-size:11px;color:#52c41a">推荐</span></div>
+        <div style="font-size:12px;color:#aaa;margin-top:2px">2000万Token免费 · 9B以下模型永久免费 · 国内直连</div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px" onclick="showApiGuide('siliconflow')">📖 获取流程</button>
+          <button class="btn btn-primary" style="padding:4px 10px;font-size:12px" onclick="quickFillAPI('https://api.siliconflow.cn/v1/chat/completions','Qwen/Qwen2.5-7B-Instruct')">⚡一键填入</button>
+        </div>
+      </div>
+      <div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px;margin-bottom:8px">
+        <div style="font-size:13px;color:#4a9eff;font-weight:700">DeepSeek 🇨🇳</div>
+        <div style="font-size:12px;color:#aaa;margin-top:2px">注册赠送Token · 模型质量高 · 国内直连</div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px" onclick="showApiGuide('deepseek')">📖 获取流程</button>
+          <button class="btn btn-primary" style="padding:4px 10px;font-size:12px" onclick="quickFillAPI('https://api.deepseek.com/v1/chat/completions','deepseek-chat')">⚡一键填入</button>
+        </div>
+      </div>
+      <div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px;margin-bottom:8px">
+        <div style="font-size:13px;color:#4a9eff;font-weight:700">OpenRouter 🌐 <span style="font-size:11px;color:#faad14">需梯子</span></div>
+        <div style="font-size:12px;color:#aaa;margin-top:2px">28+免费模型 · 一个Key调多家 · 50请求/天</div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px" onclick="showApiGuide('openrouter')">📖 获取流程</button>
+          <button class="btn btn-primary" style="padding:4px 10px;font-size:12px" onclick="quickFillAPI('https://openrouter.ai/api/v1/chat/completions','meta-llama/llama-3.3-70b-instruct:free')">⚡一键填入</button>
+        </div>
+      </div>
+      <div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px;margin-bottom:8px">
+        <div style="font-size:13px;color:#4a9eff;font-weight:700">Groq 🌐 <span style="font-size:11px;color:#faad14">需梯子</span></div>
+        <div style="font-size:12px;color:#aaa;margin-top:2px">极速推理 · 14400请求/天(8B) · OpenAI兼容</div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px" onclick="showApiGuide('groq')">📖 获取流程</button>
+          <button class="btn btn-primary" style="padding:4px 10px;font-size:12px" onclick="quickFillAPI('https://api.groq.com/openai/v1/chat/completions','llama-3.1-8b-instant')">⚡一键填入</button>
+        </div>
+      </div>
+      <div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px;margin-bottom:8px">
+        <div style="font-size:13px;color:#4a9eff;font-weight:700">Google Gemini 🌐 <span style="font-size:11px;color:#faad14">需梯子</span></div>
+        <div style="font-size:12px;color:#aaa;margin-top:2px">Gemini 2.5 Flash · 1500次/天 · 多模态</div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px" onclick="showApiGuide('gemini')">📖 获取流程</button>
+          <button class="btn btn-primary" style="padding:4px 10px;font-size:12px" onclick="quickFillAPI('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions','gemini-2.5-flash')">⚡一键填入</button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#666;margin-top:8px;line-height:1.5">💡 国内用户首选硅基流动；有梯子推荐OpenRouter或Groq。一键填入后仍需手动填写API Key。</div>
+    </div>
     <label>API Key（DeepSeek）</label>
     <input type="password" id="setting-apikey" placeholder="sk-xxx">
     <label>模型</label>
@@ -402,42 +447,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <input type="text" id="setting-api-url" placeholder="https://api.deepseek.com/v1/chat/completions">
     <button class="btn btn-secondary" onclick="testApiConnection()" style="margin-top:6px;width:100%;font-size:12px">🔌 测试连接</button>
     <div id="api-test-result" style="font-size:12px;margin-top:4px;min-height:16px"></div>
-    <details style="margin-top:8px;border-radius:8px;overflow:hidden">
-      <summary style="font-size:12px;color:var(--pink);cursor:pointer;padding:6px 0">📋 免费API推荐（点击展开）</summary>
-      <div style="font-size:11px;color:#888;margin-top:6px;line-height:1.5">
-        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:8px;margin-bottom:6px">
-          <div style="color:#4a9eff;font-weight:600">硅基流动 SiliconFlow 🇨🇳</div>
-          <div>2000万Token免费 · 9B以下模型永久免费</div>
-          <div style="color:#666;margin-top:2px">注册: cloud.siliconflow.cn</div>
-          <button class="btn btn-secondary" style="margin-top:4px;padding:2px 8px;font-size:11px" onclick="quickFillAPI('https://api.siliconflow.cn/v1/chat/completions','Qwen/Qwen2.5-7B-Instruct')">一键填入</button>
-        </div>
-        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:8px;margin-bottom:6px">
-          <div style="color:#4a9eff;font-weight:600">DeepSeek 🇨🇳</div>
-          <div>注册赠送Token（非永久免费）</div>
-          <div style="color:#666;margin-top:2px">注册: platform.deepseek.com</div>
-          <button class="btn btn-secondary" style="margin-top:4px;padding:2px 8px;font-size:11px" onclick="quickFillAPI('https://api.deepseek.com/v1/chat/completions','deepseek-chat')">一键填入</button>
-        </div>
-        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:8px;margin-bottom:6px">
-          <div style="color:#4a9eff;font-weight:600">OpenRouter 🌐（需梯子）</div>
-          <div>28+免费模型 · 50请求/天</div>
-          <div style="color:#666;margin-top:2px">注册: openrouter.ai</div>
-          <button class="btn btn-secondary" style="margin-top:4px;padding:2px 8px;font-size:11px" onclick="quickFillAPI('https://openrouter.ai/api/v1/chat/completions','meta-llama/llama-3.3-70b-instruct:free')">一键填入</button>
-        </div>
-        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:8px;margin-bottom:6px">
-          <div style="color:#4a9eff;font-weight:600">Groq 🌐（需梯子）</div>
-          <div>极速推理 · 14400请求/天(8B)</div>
-          <div style="color:#666;margin-top:2px">注册: console.groq.com</div>
-          <button class="btn btn-secondary" style="margin-top:4px;padding:2px 8px;font-size:11px" onclick="quickFillAPI('https://api.groq.com/openai/v1/chat/completions','llama-3.1-8b-instant')">一键填入</button>
-        </div>
-        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:8px;margin-bottom:6px">
-          <div style="color:#4a9eff;font-weight:600">Google Gemini 🌐（需梯子）</div>
-          <div>Gemini 2.5 Flash · 1500次/天</div>
-          <div style="color:#666;margin-top:2px">注册: aistudio.google.com</div>
-          <button class="btn btn-secondary" style="margin-top:4px;padding:2px 8px;font-size:11px" onclick="quickFillAPI('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions','gemini-2.5-flash')">一键填入</button>
-        </div>
-        <div style="color:#666;margin-top:4px;font-size:10px">提示：国内用户推荐硅基流动；有梯子推荐OpenRouter或Groq。一键填入后仍需手动填写对应平台的API Key。</div>
-      </div>
-    </details>
+
     <label>实例ID（用于成长上报）</label>
     <input type="text" id="setting-instance-id" placeholder="web-xxx">
     <label>你的昵称（可选，让知乐记住你）</label>
@@ -3945,6 +3955,108 @@ function exportCurrentChat() {
 // ============ P2: 关于页面 ============
 function toggleAboutPanel() {
   document.getElementById('about-modal').classList.toggle('open');
+}
+
+
+// ============ API获取流程弹窗 ============
+function showApiGuide(provider) {
+  var guides = {
+    siliconflow: {
+      title: '硅基流动 SiliconFlow 获取流程',
+      steps: [
+        '打开 cloud.siliconflow.cn（国内可直连，无需梯子）',
+        '点击注册，使用手机号或微信登录',
+        '登录后，新用户自动获得 2000 万 Token 免费额度',
+        '点击左侧菜单「API密钥」',
+        '点击「新建密钥」，名称随意（如"知乐"）',
+        '复制生成的密钥（以 sk- 开头）',
+        '回到知乐网页，点上方「⚡一键填入」',
+        '将复制的密钥粘贴到 API Key 输入框',
+        '点「🔌 测试连接」确认可用，保存即可',
+        '提示：9B参数以下模型（如Qwen2.5-7B）永久免费，不消耗赠送额度'
+      ]
+    },
+    deepseek: {
+      title: 'DeepSeek 获取流程',
+      steps: [
+        '打开 platform.deepseek.com（国内可直连）',
+        '点击注册，手机号或微信登录',
+        '新用户会赠送一定量免费Token（具体额度以官网为准）',
+        '点击左侧菜单「API Keys」',
+        '点击「创建 API Key」',
+        '复制生成的密钥（以 sk- 开头）',
+        '回到知乐网页，点上方「⚡一键填入」',
+        '将密钥粘贴到 API Key 输入框',
+        '点「🔌 测试连接」确认可用，保存即可',
+        '注意：DeepSeek赠送额度非永久免费，用完需充值'
+      ]
+    },
+    openrouter: {
+      title: 'OpenRouter 获取流程（需梯子）',
+      steps: [
+        '打开 openrouter.ai（需要科学上网）',
+        '点击「Sign In」，用 Google 或 GitHub 账号登录',
+        '登录后点击右上角头像 →「Keys」',
+        '点击「Create Key」，名称随意',
+        '复制生成的密钥（以 sk-or- 开头）',
+        '回到知乐网页，点上方「⚡一键填入」',
+        '将密钥粘贴到 API Key 输入框',
+        '点「🔌 测试连接」确认可用，保存即可',
+        '免费模型名带 :free 后缀，如 meta-llama/llama-3.3-70b-instruct:free',
+        '未充值用户每天50请求；充值满$10后提升到1000请求/天'
+      ]
+    },
+    groq: {
+      title: 'Groq 获取流程（需梯子）',
+      steps: [
+        '打开 console.groq.com（需要科学上网）',
+        '点击「Login」，用 Google 或 GitHub 账号登录',
+        '登录后进入控制台，左侧点击「API Keys」',
+        '点击「Create API Key」',
+        '复制生成的密钥（以 gsk_ 开头）',
+        '回到知乐网页，点上方「⚡一键填入」',
+        '将密钥粘贴到 API Key 输入框',
+        '点「🔌 测试连接」确认可用，保存即可',
+        'Groq的LPU芯片推理极快，Llama 3.1 8B可达300+ tokens/s',
+        '免费额度：Llama 3.1 8B每天14400次请求'
+      ]
+    },
+    gemini: {
+      title: 'Google Gemini 获取流程（需梯子）',
+      steps: [
+        '打开 aistudio.google.com（需要科学上网）',
+        '用 Google 账号登录（没有就注册一个，30秒搞定）',
+        '点击左侧「Get API Key」',
+        '点击「Create API Key」',
+        '选择一个项目（或创建新项目），复制生成的密钥（以 AIza 开头）',
+        '回到知乐网页，点上方「⚡一键填入」',
+        '将密钥粘贴到 API Key 输入框',
+        '点「🔌 测试连接」确认可用，保存即可',
+        '免费层：Gemini 2.5 Flash 每天1500次请求（最慷慨的免费额度之一）',
+        '注意：免费层的数据可能被Google用于模型训练，请勿发送敏感信息'
+      ]
+    }
+  };
+  var g = guides[provider];
+  if (!g) return;
+  var existing = document.getElementById('api-guide-modal');
+  if (existing) existing.remove();
+  var modal = document.createElement('div');
+  modal.id = 'api-guide-modal';
+  modal.className = 'settings-modal open';
+  modal.style.zIndex = '9999';
+  var stepsHtml = g.steps.map(function(s, i) {
+    return '<div style="display:flex;gap:10px;margin-bottom:10px;font-size:13px;color:#ccc;line-height:1.5">' +
+      '<span style="flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--pink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">' + (i+1) + '</span>' +
+      '<span>' + s + '</span></div>';
+  }).join('');
+  modal.innerHTML = '<div class="settings-content" style="max-width:360px;max-height:80vh;overflow-y:auto">' +
+    '<h3 style="color:var(--pink);font-size:14px">' + g.title + '</h3>' +
+    '<div style="margin-top:14px">' + stepsHtml + '</div>' +
+    '<button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="this.closest(\\'.settings-modal\\').remove()">明白了</button>' +
+    '</div>';
+  modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
 }
 
 </script>
