@@ -402,7 +402,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div style="font-size:12px;color:#aaa;margin-top:2px">2000万Token免费 · 9B以下模型永久免费 · 国内直连</div>
         <div style="display:flex;gap:6px;margin-top:8px">
           <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px" onclick="showApiGuide('siliconflow')">📖 获取流程</button>
-          <button class="btn btn-primary" style="padding:4px 10px;font-size:12px" onclick="quickFillAPI('https://api.siliconflow.cn/v1/chat/completions','Qwen/Qwen2.5-7B-Instruct')">⚡一键填入</button>
+          <button class="btn btn-primary" style="padding:4px 10px;font-size:12px" onclick="quickFillAPI('https://zhile-growth.leansheng908.workers.dev/api/chat','Qwen/Qwen2.5-7B-Instruct')">⚡一键填入</button>
         </div>
       </div>
       <div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px;margin-bottom:8px">
@@ -444,7 +444,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <label>模型</label>
     <input type="text" id="setting-model" placeholder="Qwen/Qwen2.5-7B-Instruct">
     <label>API地址（留空=默认DeepSeek，可换其他兼容API）</label>
-    <input type="text" id="setting-api-url" placeholder="https://api.siliconflow.cn/v1/chat/completions">
+    <input type="text" id="setting-api-url" placeholder="https://zhile-growth.leansheng908.workers.dev/api/chat">
     <button class="btn btn-secondary" onclick="testApiConnection()" style="margin-top:6px;width:100%;font-size:12px">🔌 测试连接</button>
     <div id="api-test-result" style="font-size:12px;margin-top:4px;min-height:16px"></div>
 
@@ -738,9 +738,9 @@ food = 油炸大鸡腿 / 伯爵红茶脆脆鲨威化
 
 <script>
 // ============ 配置 ============
-const DEFAULT_API_KEY = 'sk-wvsccfvdujbfjeukvsdutfpofkmfceymjgnhrdfofuxhojzp';
+const DEFAULT_API_KEY = ''; // 通过Worker代理，无需明文Key
 const DEFAULT_MODEL = 'Qwen/Qwen2.5-7B-Instruct';
-const API_URL = 'https://api.siliconflow.cn/v1/chat/completions';
+const API_URL = 'https://zhile-growth.leansheng908.workers.dev/api/chat';
 const GITHUB_DATA_OWNER = 'leansheng908-code';
 const GITHUB_DATA_REPO = 'zhile-data';
 // 成长事件代理 - Cloudflare Worker (token藏在服务端，前端不可见)
@@ -3410,7 +3410,7 @@ function checkScheduledGreeting() {
 async function testApiConnection() {
   var result = document.getElementById('api-test-result');
   var key = document.getElementById('setting-apikey').value || '';
-  var url = document.getElementById('setting-api-url').value.trim() || 'https://api.siliconflow.cn/v1/chat/completions';
+  var url = document.getElementById('setting-api-url').value.trim() || 'https://zhile-growth.leansheng908.workers.dev/api/chat';
   var model = document.getElementById('setting-model').value || 'Qwen/Qwen2.5-7B-Instruct';
   result.style.color = '#aaa';
   result.textContent = '⏳ 测试中...';
