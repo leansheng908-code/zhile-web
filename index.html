@@ -1395,7 +1395,7 @@ async function sendMessage() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + settings.apiKey
+        // Authorization removed - Worker uses its own API key
       },
       body: JSON.stringify({
         model: settings.model,
@@ -3277,7 +3277,7 @@ async function sendFriendMessage() {
     const apiUrl = settings.apiUrl || API_URL;
     const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + settings.apiKey },
+      headers: { 'Content-Type': 'application/json', // Authorization removed - Worker uses its own API key },
       body: JSON.stringify({ model: settings.model, messages: apiMessages, temperature: 0.8, max_tokens: 500 })
     });
     if (!response.ok) { const err = await response.text(); throw new Error('API错误 ' + response.status + ': ' + err.substring(0, 100)); }
@@ -3351,7 +3351,7 @@ async function generateDiary() {
     var apiUrl = settings.apiUrl || API_URL;
     var resp = await fetch(apiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + settings.apiKey },
+      headers: { 'Content-Type': 'application/json', // Authorization removed - Worker uses its own API key },
       body: JSON.stringify({ model: settings.model, messages: [{ role: 'user', content: prompt }], temperature: 0.9, max_tokens: 300 })
     });
     if (!resp.ok) throw new Error('API错误 ' + resp.status);
@@ -3724,7 +3724,7 @@ async function generatePrivateMoment(friendId, userText, friendReply) {
     var apiUrl = settings.apiUrl || API_URL;
     var resp = await fetch(apiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + settings.apiKey },
+      headers: { 'Content-Type': 'application/json', // Authorization removed - Worker uses its own API key },
       body: JSON.stringify({ model: settings.model, messages: [{ role: 'user', content: prompt }], temperature: 0.95, max_tokens: 200 })
     });
     if (!resp.ok) return;
@@ -3762,7 +3762,7 @@ async function generateMoment(fl, moments) {
     var apiUrl = settings.apiUrl || API_URL;
     var resp = await fetch(apiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + settings.apiKey },
+      headers: { 'Content-Type': 'application/json', // Authorization removed - Worker uses its own API key },
       body: JSON.stringify({ model: settings.model, messages: [{ role: 'user', content: prompt }], temperature: 0.9, max_tokens: 200 })
     });
     if (!resp.ok) return;
@@ -3875,7 +3875,7 @@ async function callCommentAPI(name, prompt) {
     var apiUrl = settings.apiUrl || API_URL;
     var resp = await fetch(apiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + settings.apiKey },
+      headers: { 'Content-Type': 'application/json', // Authorization removed - Worker uses its own API key },
       body: JSON.stringify({ model: settings.model, messages: [{ role: 'user', content: prompt }], temperature: 0.9, max_tokens: 100 })
     });
     if (!resp.ok) return null;
