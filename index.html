@@ -904,6 +904,13 @@ let chatCount = parseInt(localStorage.getItem('zhile_chat_count') || '0');
 let achievements = JSON.parse(localStorage.getItem('zhile_achievements') || '{}');
 let emojiCollection = JSON.parse(localStorage.getItem('zhile_emoji_collection') || '{}');
 let stickerCollection = JSON.parse(localStorage.getItem('zhile_sticker_collection') || '{}');
+function trimCollection(col, max) {
+  var keys = Object.keys(col);
+  if (keys.length <= max) return col;
+  keys.sort(function(a, b) { return new Date(col[a].firstSeen) - new Date(col[b].firstSeen); });
+  while (Object.keys(col).length > max) { delete col[keys.shift()]; }
+  return col;
+}
 const DEFAULT_REF_EMOJIS = ['₍^•ω•^₍','(=´∀｀)','(//ω//)','(⡙°□°)⡙︵ ┻━┻','(=^※^=)','(｡♥‿♥｡)','(´;ω;`\')','˶ᵙ ᴥ ᵙ˶','˶>ᗛ<˶','૔(´▽★)૕','(•̀ᵗ•́)ы','٩(๑❛ᵗ❛๑)۶','(｡•́￣•̀｡)'];
 let refEmojis = JSON.parse(localStorage.getItem('zhile_ref_emojis') || JSON.stringify(DEFAULT_REF_EMOJIS));
 let emojiBlacklist = JSON.parse(localStorage.getItem('zhile_emoji_blacklist') || '[]');
@@ -1120,7 +1127,7 @@ function init() {
         });
       }
     });
-    localStorage.setItem('zhile_emoji_collection', JSON.stringify(emojiCollection));
+    trimCollection(emojiCollection, 100); localStorage.setItem('zhile_emoji_collection', JSON.stringify(emojiCollection));
   }
   scrollToBottom();
   // Restore live2d state
@@ -1391,7 +1398,7 @@ function addZhileMsg(text, ts, emotion, animate) {
       } else {
         stickerCollection[sKey].count++;
       }
-      localStorage.setItem('zhile_sticker_collection', JSON.stringify(stickerCollection));
+      trimCollection(stickerCollection, 100); localStorage.setItem('zhile_sticker_collection', JSON.stringify(stickerCollection));
     }
   }
   
@@ -1662,7 +1669,7 @@ function detectGrowthEvent(text, role, emotion) {
         emojiCollection[e].count++;
       }
     });
-    localStorage.setItem('zhile_emoji_collection', JSON.stringify(emojiCollection));
+    trimCollection(emojiCollection, 100); localStorage.setItem('zhile_emoji_collection', JSON.stringify(emojiCollection));
     // Track secret languages
     const secretMap = { '月色真美':/月色真美/, '那个味儿':/那个味儿/, '长出':/长出/, '在呢':/在呢/, '陪着':/陪着/ };
     Object.entries(secretMap).forEach(([name, pat]) => {
@@ -2056,7 +2063,7 @@ function updateEmojiDisplay() {
         const emo = cell.getAttribute('data-emoji');
         if (confirm('删除颜文字「' + emo + '」？\n删除后不会出现在图鉴中，知乐也会记住不使用它。')) {
           delete emojiCollection[emo];
-          localStorage.setItem('zhile_emoji_collection', JSON.stringify(emojiCollection));
+          trimCollection(emojiCollection, 100); localStorage.setItem('zhile_emoji_collection', JSON.stringify(emojiCollection));
           const ri = refEmojis.indexOf(emo);
           if (ri > -1) refEmojis.splice(ri, 1);
           localStorage.setItem('zhile_ref_emojis', JSON.stringify(refEmojis));
@@ -2076,7 +2083,7 @@ function updateEmojiDisplay() {
         const emo = cell.getAttribute('data-emoji');
         if (confirm('删除颜文字「' + emo + '」？\n删除后不会出现在图鉴中，知乐也会记住不使用它。')) {
           delete emojiCollection[emo];
-          localStorage.setItem('zhile_emoji_collection', JSON.stringify(emojiCollection));
+          trimCollection(emojiCollection, 100); localStorage.setItem('zhile_emoji_collection', JSON.stringify(emojiCollection));
           const ri = refEmojis.indexOf(emo);
           if (ri > -1) refEmojis.splice(ri, 1);
           localStorage.setItem('zhile_ref_emojis', JSON.stringify(refEmojis));
@@ -3622,7 +3629,7 @@ function getFriendsList() {
 
 function getMoments() { return JSON.parse(localStorage.getItem('zhile_moments') || '[]'); }
 function saveMoments(m) {
-  if (m.length > 200) m = m.slice(-200);
+  if (m.length > 100) m = m.slice(-100);
   localStorage.setItem('zhile_moments', JSON.stringify(m));
 }
 
