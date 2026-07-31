@@ -196,6 +196,114 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .chat-delete:active{color:#e74c3c}
 
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== 治愈暖橙皮肤 - Layer 1: CSS变量覆盖 ===== */
+[data-theme="warm"] {
+  --bg: #fff5ee;
+  --card: #fff0e6;
+  --text: #5c3d2e;
+  --user: #5daade;
+  --zhile: #ff8c69;
+  --gold: #f4a460;
+  --green: #6bc977;
+  --pink: #ff9a8b;
+  --blue: #a8d8ea;
+  --accent: #ff8c69;
+  --border: #ffe0d0;
+  --muted: #b8a090;
+}
+
+/* ===== 治愈暖橙皮肤 - 硬编码rgba(255,183,197,...)覆盖 ===== */
+[data-theme="warm"] .header{border-bottom:1px solid rgba(255,154,139,.2)}
+[data-theme="warm"] .live2d-toggle{background:rgba(255,154,139,.1)}
+[data-theme="warm"] .live2d-toggle:hover{background:rgba(255,154,139,.2)}
+[data-theme="warm"] .live2d-sparkle{background:rgba(255,154,139,.6)}
+[data-theme="warm"] .msg.zhile{border:1px solid rgba(255,154,139,.15)}
+[data-theme="warm"] .action-box{border-left:2px solid rgba(255,154,139,.3)}
+[data-theme="warm"] #input-area{border-top:1px solid rgba(255,154,139,.2)}
+[data-theme="warm"] #user-input{border:1px solid rgba(255,154,139,.2)}
+[data-theme="warm"] .growth-panel{border-top:1px solid rgba(255,154,139,.2)}
+[data-theme="warm"] .level-up-banner{background:linear-gradient(135deg,rgba(255,154,139,.95),rgba(244,164,96,.95))}
+[data-theme="warm"] .settings-content input{border:1px solid rgba(255,154,139,.2)}
+[data-theme="warm"] .cat-btn.active{background:rgba(255,154,139,.12);color:var(--pink);box-shadow:0 0 8px rgba(255,154,139,.08)}
+[data-theme="warm"] .sub-btn.active{background:rgba(255,154,139,.1);color:var(--pink)}
+[data-theme="warm"] .emoji-cell.discovered{background:rgba(255,154,139,.08);border:1px solid rgba(255,154,139,.1)}
+[data-theme="warm"] .emoji-cell.discovered:hover{background:rgba(255,154,139,.15)}
+[data-theme="warm"] .sticker-cell{background:rgba(255,154,139,.08);border:1px solid rgba(255,154,139,.1)}
+[data-theme="warm"] .sticker-cell:hover{background:rgba(255,154,139,.15)}
+[data-theme="warm"] .timeline::before{background:rgba(255,154,139,.2)}
+[data-theme="warm"] .star-map-container{border:1px solid rgba(255,154,139,.08)}
+[data-theme="warm"] .star-tooltip{border:1px solid rgba(255,154,139,.25);box-shadow:0 4px 16px rgba(0,0,0,.6),0 0 12px rgba(255,154,139,.1)}
+[data-theme="warm"] .tide-container{border:1px solid rgba(255,154,139,.08)}
+[data-theme="warm"] .tide-tooltip{border:1px solid rgba(255,154,139,.25);box-shadow:0 4px 16px rgba(0,0,0,.6),0 0 12px rgba(255,154,139,.1)}
+[data-theme="warm"] .flower-container{border:1px solid rgba(255,154,139,.08)}
+[data-theme="warm"] .flower-tooltip{border:1px solid rgba(255,154,139,.25);box-shadow:0 4px 16px rgba(0,0,0,.6),0 0 12px rgba(255,154,139,.1)}
+[data-theme="warm"] .scroll-bottom-btn{border:1px solid rgba(255,154,139,.2)}
+[data-theme="warm"] .copy-toast{border:1px solid rgba(255,154,139,.2)}
+
+/* ===== 治愈暖橙皮肤 - 硬编码灰色值覆盖 ===== */
+[data-theme="warm"] .sidebar-id{color:#8a7260}
+[data-theme="warm"] .sidebar-section{color:#8a7260}
+[data-theme="warm"] .msg.system{color:#8a7260}
+[data-theme="warm"] .growth-event .time{color:#8a7260}
+[data-theme="warm"] .affection-section .progress-text{color:#8a7260}
+[data-theme="warm"] .ach-desc{color:#8a7260}
+[data-theme="warm"] .emoji-cell .emoji-count{color:#8a7260}
+[data-theme="warm"] .sticker-cell .emoji-count{color:#8a7260}
+[data-theme="warm"] .tl-meta{color:#8a7260}
+[data-theme="warm"] .chat-delete{color:#8a7260}
+[data-theme="warm"] .header-status{color:#a0938a}
+[data-theme="warm"] .icon-btn{color:#a0938a}
+[data-theme="warm"] .time-sep{color:#a0938a}
+[data-theme="warm"] .affection-section .level-value{color:#a0938a}
+[data-theme="warm"] .affection-log-item{color:#a0938a}
+[data-theme="warm"] .settings-content label{color:#a0938a}
+[data-theme="warm"] .btn-secondary{color:#a0938a;border:1px solid #d4c5b8}
+[data-theme="warm"] .cat-btn{color:#a0938a}
+[data-theme="warm"] .mood-section-title{color:#a0938a}
+[data-theme="warm"] .chat-edit{color:#a0938a}
+[data-theme="warm"] .sticker-cell .sticker-label{color:#c4b5a8}
+[data-theme="warm"] .disclaimer-box li{color:#d4c5b8}
+
+/* ===== 治愈暖橙皮肤 - Layer 2: 组件重样式 ===== */
+/* body暖色渐变背景 */
+[data-theme="warm"] body{background:linear-gradient(135deg,#fff5ee,#ffe8d6)}
+
+/* 消息气泡 - 更大圆角+柔和投影 */
+[data-theme="warm"] .msg{border-radius:16px;box-shadow:0 2px 8px rgba(255,154,139,.1)}
+
+/* 卡片/面板 - 新拟态柔阴影 */
+[data-theme="warm"] .header{box-shadow:0 4px 12px rgba(255,154,139,.08),inset 0 1px 0 rgba(255,255,255,.5)}
+[data-theme="warm"] #input-area{box-shadow:0 4px 12px rgba(255,154,139,.08),inset 0 1px 0 rgba(255,255,255,.5)}
+[data-theme="warm"] .growth-panel{box-shadow:0 4px 12px rgba(255,154,139,.08),inset 0 1px 0 rgba(255,255,255,.5)}
+[data-theme="warm"] .settings-content{box-shadow:0 4px 12px rgba(255,154,139,.08),inset 0 1px 0 rgba(255,255,255,.5)}
+
+/* 成就弹窗 - 金边3D感 */
+[data-theme="warm"] .ach-unlock{border:2px solid #f4a460;box-shadow:0 0 20px rgba(244,164,96,.3),0 4px 16px rgba(255,154,139,.2)}
+
+/* 头像 - 柔和发光环 */
+[data-theme="warm"] .avatar{box-shadow:0 0 12px rgba(255,154,139,.2)}
+[data-theme="warm"] .sidebar-avatar{box-shadow:0 0 12px rgba(255,154,139,.2)}
+
+/* 按钮hover - 暖色发光 */
+[data-theme="warm"] .btn-primary:hover{box-shadow:0 0 12px rgba(255,140,105,.4)}
+[data-theme="warm"] .icon-btn:hover{color:var(--pink);text-shadow:0 0 8px rgba(255,154,139,.3)}
+[data-theme="warm"] .cat-btn:hover{box-shadow:0 0 8px rgba(255,154,139,.15)}
+
+/* 输入框 - 暖色边框focus */
+[data-theme="warm"] #user-input:focus{border-color:#ff8c69;box-shadow:0 0 8px rgba(255,140,105,.2)}
+[data-theme="warm"] .settings-content input:focus{border-color:#ff8c69;box-shadow:0 0 6px rgba(255,140,105,.15)}
+
+/* 成长进度条 - 暖色渐变 */
+[data-theme="warm"] .affection-section .progress-fill{background:linear-gradient(90deg,#ff9a8b,#f4a460)}
+
+/* ===== 皮肤切换按钮样式 ===== */
+.skin-btn{flex:1;padding:10px 12px;border:1px solid rgba(255,183,197,.2);border-radius:10px;background:var(--bg);color:var(--text);font-size:13px;cursor:pointer;transition:all .2s}
+.skin-btn.active{background:var(--pink);color:#fff;border-color:var(--pink)}
+.skin-btn:hover{opacity:.85}
+[data-theme="warm"] .skin-btn{border-color:rgba(255,154,139,.2)}
+[data-theme="warm"] .skin-btn.active{background:#ff8c69;color:#fff;border-color:#ff8c69}
+
 </style>
 </head>
 <body>
@@ -458,6 +566,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <input type="range" id="setting-live2d-h" min="15" max="80" value="32" style="width:100%">
     <label>💬 立绘透明度: <span id="live2d-opacity-val">100</span>%</label>
     <input type="range" id="setting-live2d-opacity" min="0" max="100" value="100" style="width:100%">
+    <label>🎨 皮肤风格</label>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="skin-btn active" data-skin="default">🌙 经典暗色</button>
+      <button class="skin-btn" data-skin="warm">☀️ 治愈暖橙</button>
+    </div>
+    <hr style="border:0;border-top:1px solid rgba(255,183,197,.15);margin:12px 0">
     <label>🎨 主题色（知乐气泡边框/按钮）</label>
     <input type="color" id="setting-accent" value="#ff6b9d" style="width:100%;height:36px;border:none;border-radius:8px;background:none;cursor:pointer">
     <label>🌟 背景色</label>
@@ -4029,6 +4143,35 @@ function showApiGuide(provider) {
   modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
 }
+
+
+// ===== 治愈暖橙皮肤切换逻辑 =====
+document.querySelectorAll('.skin-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var skin = this.dataset.skin;
+    document.querySelectorAll('.skin-btn').forEach(function(b) {
+      b.classList.remove('active');
+    });
+    this.classList.add('active');
+    if (skin === 'warm') {
+      document.body.setAttribute('data-theme', 'warm');
+    } else {
+      document.body.removeAttribute('data-theme');
+    }
+    localStorage.setItem('zhile-skin', skin);
+  });
+});
+
+// 页面加载时恢复皮肤
+(function() {
+  var savedSkin = localStorage.getItem('zhile-skin');
+  if (savedSkin === 'warm') {
+    document.body.setAttribute('data-theme', 'warm');
+    document.querySelectorAll('.skin-btn').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.skin === 'warm');
+    });
+  }
+})();
 
 </script>
 
