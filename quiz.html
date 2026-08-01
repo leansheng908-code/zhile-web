@@ -822,10 +822,12 @@ function goBack() {
 
 // ====== 完成测试 ======
 function finishQuiz() {
+  try {
   // 计算分数
   initScores();
   for (let i = 0; i < answers.length; i++) {
     const opt = questions[i].opts[answers[i]];
+    if (!opt || !opt.scores) { console.error('Missing answer at index', i, 'value:', answers[i]); continue; }
     for (const key in opt.scores) {
       scores[key] += opt.scores[key];
     }
@@ -850,15 +852,30 @@ function finishQuiz() {
       document.getElementById('loading-subtext').textContent = subtexts[stIdx];
     }
   }, 2500);
+  
+  // 安全超时：20秒后如果还没结果，直接显示兜底
+  const safetyTimeout = setTimeout(() => {
+    clearInterval(stInterval);
+    console.log('Safety timeout triggered');
+    showResult(profile, null, new Error('超时'));
+  }, 20000);
 
   // 调用API
   callAI(profile).then(result => {
     clearInterval(stInterval);
+    clearTimeout(safetyTimeout);
     showResult(profile, result);
   }).catch(err => {
     clearInterval(stInterval);
+    clearTimeout(safetyTimeout);
     showResult(profile, null, err);
   });
+  } catch(e) {
+    console.error('finishQuiz error:', e);
+    showScreen('result-screen');
+    document.getElementById('result-code').textContent = 'ERROR';
+    document.getElementById('result-content').innerHTML = '<div style="text-align:center;padding:40px;color:#999;">出了点小问题，请刷新重试。<br><br><button class="retry-btn" onclick="location.reload()" style="font-size:14px;padding:10px 28px;">刷新重试</button></div>';
+  }
 }
 
 // ====== 计算画像 ======
@@ -896,6 +913,7 @@ function calculateProfile() {
 
 // ====== 调用AI API ======
 async function callAI(profile) {
+  console.log('callAI started, profile:', profile.code);
   const dimLines = profile.dimDetails.map(d => {
     return `- ${d.labelA}(${d.poleA})${d.scoreA} vs ${d.labelB}(${d.poleB})${d.scoreB}`;
   }).join('\n');
@@ -922,14 +940,19 @@ async function callAI(profile) {
     max_tokens: 500
   };
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  
   const response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer sk-wvsccfvdujbfjeukvsdutfpofkmfceymjgnhrdfofuxhojzp'
     },
-    body: JSON.stringify(requestBody)
+    body: JSON.stringify(requestBody),
+    signal: controller.signal
   });
+  clearTimeout(timeoutId);
 
   if (!response.ok) {
     throw new Error(`API请求失败 (${response.status})`);
