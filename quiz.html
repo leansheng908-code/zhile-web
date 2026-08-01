@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>灵光试衣间</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(160deg, #e8e3ff 0%, #f0e6ff 20%, #fce4ec 60%, #fff0f5 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    color: #3a2e5c;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app-container {
+    width: 100%;
+    max-width: 480px;
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ====== 欢迎页 ====== */
+  #welcome-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 40px 28px;
+    text-align: center;
+    animation: fadeIn 0.6s ease;
+  }
+
+  .welcome-icon {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #b388ff, #f48fb1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 42px;
+    margin-bottom: 28px;
+    box-shadow: 0 8px 32px rgba(179, 136, 255, 0.35);
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 8px 32px rgba(179, 136, 255, 0.35); }
+    50% { transform: scale(1.05); box-shadow: 0 12px 40px rgba(179, 136, 255, 0.45); }
+  }
+
+  .welcome-title {
+    font-size: 34px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #7c4dff, #ec407a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 14px;
+    letter-spacing: 3px;
+  }
+
+  .welcome-subtitle {
+    font-size: 15px;
+    color: #8a7ca8;
+    line-height: 1.8;
+    margin-bottom: 48px;
+    max-width: 300px;
+  }
+
+  .start-btn {
+    background: linear-gradient(135deg, #9c6ade, #e87da6);
+    color: #fff;
+    border: none;
+    padding: 16px 56px;
+    border-radius: 30px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 24px rgba(156, 106, 222, 0.35);
+    letter-spacing: 2px;
+  }
+
+  .start-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 3px 12px rgba(156, 106, 222, 0.3);
+  }
+
+  .welcome-hint {
+    margin-top: 32px;
+    font-size: 12px;
+    color: #b0a3c8;
+    letter-spacing: 1px;
+  }
+
+  /* ====== 答题页 ====== */
+  #quiz-screen {
+    display: none;
+    flex-direction: column;
+    min-height: 100vh;
+    padding: 20px 20px 40px;
+    animation: fadeIn 0.4s ease;
+  }
+
+  .quiz-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .back-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.7);
+    color: #9c6ade;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .back-btn:active { transform: scale(0.9); }
+  .back-btn:disabled { opacity: 0.3; cursor: default; }
+
+  .progress-text {
+    font-size: 14px;
+    color: #8a7ca8;
+    font-weight: 600;
+  }
+
+  .progress-bar-container {
+    width: 100%;
+    height: 6px;
+    background: rgba(179, 136, 255, 0.15);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 36px;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #b388ff, #f48fb1);
+    border-radius: 10px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0%;
+  }
+
+  .question-card {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 32px 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 24px rgba(179, 136, 255, 0.1);
+    animation: slideUp 0.4s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .question-number {
+    font-size: 12px;
+    color: #b388ff;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+
+  .question-text {
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.6;
+    color: #4a3a6b;
+  }
+
+  .options-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .option-btn {
+    background: rgba(255, 255, 255, 0.7);
+    border: 2px solid rgba(179, 136, 255, 0.15);
+    border-radius: 16px;
+    padding: 18px 20px;
+    font-size: 16px;
+    color: #4a3a6b;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-align: left;
+    line-height: 1.5;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 60px;
+  }
+
+  .option-btn:active {
+    transform: scale(0.97);
+    border-color: #b388ff;
+    background: rgba(179, 136, 255, 0.08);
+  }
+
+  .option-letter {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e8e3ff, #fce4ec);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #9c6ade;
+    flex-shrink: 0;
+    transition: all 0.25s;
+  }
+
+  .option-btn:active .option-letter {
+    background: linear-gradient(135deg, #b388ff, #f48fb1);
+    color: #fff;
+  }
+
+  /* ====== 加载页 ====== */
+  #loading-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 40px;
+    text-align: center;
+    animation: fadeIn 0.5s ease;
+  }
+
+  .loading-animation {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 32px;
+    position: relative;
+  }
+
+  .loading-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 4px solid transparent;
+  }
+
+  .loading-ring:nth-child(1) {
+    border-top-color: #b388ff;
+    animation: spin 1.2s linear infinite;
+  }
+
+  .loading-ring:nth-child(2) {
+    border-bottom-color: #f48fb1;
+    animation: spin 1.6s linear infinite reverse;
+    width: 70%;
+    height: 70%;
+    top: 15%;
+    left: 15%;
+  }
+
+  .loading-ring:nth-child(3) {
+    border-left-color: #ce93d8;
+    animation: spin 2s linear infinite;
+    width: 40%;
+    height: 40%;
+    top: 30%;
+    left: 30%;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .loading-text {
+    font-size: 18px;
+    font-weight: 600;
+    color: #6a5a8a;
+    letter-spacing: 1px;
+    animation: breathe 1.8s ease-in-out infinite;
+  }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  .loading-subtext {
+    font-size: 13px;
+    color: #b0a3c8;
+    margin-top: 10px;
+  }
+
+  /* ====== 结果页 ====== */
+  #result-screen {
+    display: none;
+    flex-direction: column;
+    min-height: 100vh;
+    padding: 36px 24px 48px;
+    animation: fadeIn 0.6s ease;
+  }
+
+  .result-header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .result-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #b388ff, #f48fb1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    margin: 0 auto 16px;
+    box-shadow: 0 6px 24px rgba(179, 136, 255, 0.3);
+  }
+
+  .result-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #4a3a6b;
+    margin-bottom: 6px;
+  }
+
+  .result-code {
+    font-size: 13px;
+    color: #b388ff;
+    font-weight: 600;
+    letter-spacing: 2px;
+    background: rgba(179, 136, 255, 0.08);
+    padding: 4px 16px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-top: 6px;
+  }
+
+  .result-section {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 18px;
+    padding: 24px 22px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 20px rgba(179, 136, 255, 0.08);
+    animation: slideUp 0.5s ease;
+  }
+
+  .result-section:nth-child(3) { animation-delay: 0.1s; animation-fill-mode: both; }
+  .result-section:nth-child(4) { animation-delay: 0.2s; animation-fill-mode: both; }
+  .result-section:nth-child(5) { animation-delay: 0.3s; animation-fill-mode: both; }
+
+  .section-label {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .section-text {
+    font-size: 16px;
+    line-height: 1.8;
+    color: #5a4a7a;
+  }
+
+  .retry-btn {
+    background: linear-gradient(135deg, #9c6ade, #e87da6);
+    color: #fff;
+    border: none;
+    padding: 15px 48px;
+    border-radius: 28px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 20px rgba(156, 106, 222, 0.3);
+    letter-spacing: 2px;
+    align-self: center;
+    margin-top: 12px;
+  }
+
+  .retry-btn:active {
+    transform: scale(0.95);
+  }
+
+  .error-box {
+    text-align: center;
+    padding: 20px;
+  }
+
+  .error-text {
+    font-size: 15px;
+    color: #e87da6;
+    margin-bottom: 18px;
+    line-height: 1.6;
+  }
+
+  /* ====== 通用动画 ====== */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* 选项点击反馈 */
+  .option-btn.selected {
+    background: linear-gradient(135deg, rgba(179,136,255,0.12), rgba(244,143,177,0.12));
+    border-color: #b388ff;
+    transform: scale(0.98);
+  }
+
+  .option-btn.selected .option-letter {
+    background: linear-gradient(135deg, #b388ff, #f48fb1);
+    color: #fff;
+  }
+
+  /* 防止文字选中 */
+  .option-btn, .start-btn, .retry-btn, .back-btn {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+</style>
+</head>
+<body>
+<div class="app-container">
+
+  <!-- ====== 欢迎页 ====== -->
+  <div id="welcome-screen">
+    <div class="welcome-icon">💡</div>
+    <h1 class="welcome-title">灵光试衣间</h1>
+    <p class="welcome-subtitle">灵感来了先试穿，不合身就放下，合身就带走</p>
+    <button class="start-btn" onclick="startQuiz()">开始试穿</button>
+    <div class="welcome-hint">30道题 · 约3分钟 · 找到你的信号灯</div>
+  </div>
+
+  <!-- ====== 答题页 ====== -->
+  <div id="quiz-screen">
+    <div class="quiz-header">
+      <button class="back-btn" id="back-btn" onclick="goBack()" disabled>‹</button>
+      <span class="progress-text" id="progress-text">1 / 30</span>
+      <div style="width:36px; flex-shrink:0;"></div>
+    </div>
+    <div class="progress-bar-container">
+      <div class="progress-bar-fill" id="progress-fill"></div>
+    </div>
+    <div class="question-card" id="question-card">
+      <div class="question-number" id="q-number">第 1 题</div>
+      <div class="question-text" id="q-text"></div>
+    </div>
+    <div class="options-container" id="options-container"></div>
+  </div>
+
+  <!-- ====== 加载页 ====== -->
+  <div id="loading-screen">
+    <div class="loading-animation">
+      <div class="loading-ring"></div>
+      <div class="loading-ring"></div>
+      <div class="loading-ring"></div>
+    </div>
+    <div class="loading-text">正在为你点亮信号灯...</div>
+    <div class="loading-subtext" id="loading-subtext">读一读你的回答，想想你可能在意什么</div>
+  </div>
+
+  <!-- ====== 结果页 ====== -->
+  <div id="result-screen">
+    <div class="result-header">
+      <div class="result-icon">🚦</div>
+      <div class="result-title">你的试穿结果</div>
+      <div class="result-code" id="result-code"></div>
+    </div>
+    <div id="result-content"></div>
+    <button class="retry-btn" onclick="resetAll()">重新测试</button>
+  </div>
+
+</div>
+
+<script>
+// ====== 题目数据 ======
+const questions = [
+  { q: "周末突然有了一整天空闲，你第一反应是？", opts: [
+    { text: "终于可以做个一直想做的东西了", scores: {C:2, T:1} },
+    { text: "去那个一直想去的地方看看", scores: {E:2, B:1} },
+    { text: "约人一起做点什么", scores: {E:1, G:2} },
+    { text: "躺着刷手机也挺好", scores: {E:1, I:1} }
+  ]},
+  { q: "看到一段很酷的视频，你的第一反应是？", opts: [
+    { text: "这是怎么做的？我也想试", scores: {C:2, N:1} },
+    { text: "好想去视频里的那个地方", scores: {E:2, B:1} },
+    { text: "想转发给朋友一起看", scores: {E:1, G:2} },
+    { text: "收藏了，以后再说", scores: {N:1, I:1} }
+  ]},
+  { q: "你更享受哪种时刻？", opts: [
+    { text: "做完一个东西，看着成品的满足感", scores: {C:2, T:1} },
+    { text: "沉浸在一段体验里的投入感", scores: {E:2, D:1} },
+    { text: "和别人一起经历某件事的共鸣感", scores: {E:1, G:2} },
+    { text: "发现一个新东西时的兴奋感", scores: {E:1, B:2} }
+  ]},
+  { q: "如果学一个新技能，你更想？", opts: [
+    { text: "学了就能做出成品的那种", scores: {C:2, P:1} },
+    { text: "学了能去体验更多事情的那种", scores: {E:2, B:1} },
+    { text: "学了能和别人一起玩的那种", scores: {E:1, G:2} },
+    { text: "学本身就很好玩，管它有什么用", scores: {N:2, F:1} }
+  ]},
+  { q: '"有意思"对你来说更接近？', opts: [
+    { text: "我也想弄出一个", scores: {C:2, T:1} },
+    { text: "我也想去感受一下", scores: {E:2, B:1} },
+    { text: "我想和别人分享这个", scores: {E:1, G:2} },
+    { text: "我想搞懂它为什么有意思", scores: {N:2, D:1} }
+  ]},
+  { q: "你状态最好的时候通常是？", opts: [
+    { text: "一个人安静待着的时候", scores: {S:2, D:1} },
+    { text: "和聊得来的人在一起的时候", scores: {G:2, E:1} },
+    { text: "在人群中但不一定互动的时候", scores: {S:1, B:1} },
+    { text: "和一群人一起做同一件事的时候", scores: {G:2, T:1} }
+  ]},
+  { q: "遇到好玩的想法，你第一反应是？", opts: [
+    { text: "自己先琢磨琢磨", scores: {S:2, D:1} },
+    { text: "赶紧告诉某个人", scores: {G:2, I:1} },
+    { text: "发到网上看有没有人感兴趣", scores: {G:1, B:1} },
+    { text: "找人一起做", scores: {G:2, T:1} }
+  ]},
+  { q: "你觉得最浪费的事是？", opts: [
+    { text: "一个人独处时什么都没做", scores: {S:1, I:1} },
+    { text: "和一群人在一起但没人说真话", scores: {G:2, D:1} },
+    { text: "有好东西没人分享", scores: {G:2, E:1} },
+    { text: "待在不想待的局里", scores: {S:2, I:1} }
+  ]},
+  { q: "你理想中的工作状态是？", opts: [
+    { text: "一个人专注做自己的事，不被打扰", scores: {S:2, D:1} },
+    { text: "和默契的团队一起推进", scores: {G:2, T:1} },
+    { text: "能认识各种不同的人", scores: {G:1, B:2} },
+    { text: "独立做但有人能讨论", scores: {S:1, G:1} }
+  ]},
+  { q: "你更怕哪种孤独？", opts: [
+    { text: "身边有人但没人懂我", scores: {G:2, D:1} },
+    { text: "一个人但不知道该做什么", scores: {S:1, I:1} },
+    { text: "有想法但找不到人说", scores: {G:2, E:1} },
+    { text: "一个人太久，和世界脱节了", scores: {G:1, B:1} }
+  ]},
+  { q: '你对"什么都懂一点"怎么看？', opts: [
+    { text: "挺好，人生就该多体验", scores: {B:2, E:1} },
+    { text: "不如一件事钻到底", scores: {D:2, T:1} },
+    { text: "看情况，有些事值得深挖", scores: {D:1, B:1} },
+    { text: "我就是这样的人，停不下来", scores: {B:2, I:1} }
+  ]},
+  { q: "你手机里的收藏夹/稍后阅读？", opts: [
+    { text: "存了几百条，什么都有", scores: {B:2, N:1} },
+    { text: "很少存，看完就完了", scores: {D:1, I:1} },
+    { text: "只存真的会回去看的", scores: {D:2, P:1} },
+    { text: "存了就等于学了", scores: {B:1, F:1} }
+  ]},
+  { q: "如果给你一年时间自由支配，你更可能？", opts: [
+    { text: "把一个领域彻底钻透", scores: {D:2, N:1} },
+    { text: "每个月换一个新东西学", scores: {B:2, E:1} },
+    { text: "同时搞两三件事", scores: {B:1, T:1} },
+    { text: "先花时间想清楚到底要干什么", scores: {D:2, S:1} }
+  ]},
+  { q: "你最受不了哪种无聊？", opts: [
+    { text: "反复做同一件事", scores: {B:2, I:1} },
+    { text: "什么都浅尝辄止", scores: {D:2, T:1} },
+    { text: "不知道下一步该干什么", scores: {D:1, I:1} },
+    { text: "被困在一个领域里出不来", scores: {B:2, E:1} }
+  ]},
+  { q: "你佩服哪种人？", opts: [
+    { text: "一辈子只做一件事做到极致", scores: {D:2, T:1} },
+    { text: "什么都试过，故事一箩筐", scores: {B:2, E:1} },
+    { text: "能把不同领域的东西串起来", scores: {B:1, C:1} },
+    { text: "知道自己要什么，不被外界带节奏", scores: {D:2, S:1} }
+  ]},
+  { q: "你做事更习惯？", opts: [
+    { text: "想到就干，边做边想", scores: {I:2, T:1} },
+    { text: "想清楚再动手", scores: {L:2, D:1} },
+    { text: "先试一小步看看", scores: {I:1, B:1} },
+    { text: "等条件成熟了再说", scores: {L:2, P:1} }
+  ]},
+  { q: '你对"坚持"的看法？', opts: [
+    { text: "能坚持的才值得做", scores: {L:2, D:1} },
+    { text: "想做的不用坚持", scores: {I:2, F:1} },
+    { text: "坚持不住说明不够喜欢", scores: {I:1, D:1} },
+    { text: "坚持是一种策略，不是品质", scores: {L:1, P:1} }
+  ]},
+  { q: "一个想法从冒出来到你动手，通常？", opts: [
+    { text: "几小时内", scores: {I:2, T:1} },
+    { text: "几天内", scores: {I:1, B:1} },
+    { text: "几周到几个月", scores: {L:2, D:1} },
+    { text: "有的秒动，有的拖很久，看心情", scores: {I:1, L:1} }
+  ]},
+  { q: "你更焦虑哪种情况？", opts: [
+    { text: "时间过了但什么都没做", scores: {I:2, T:1} },
+    { text: "做太快了发现方向不对", scores: {L:2, D:1} },
+    { text: "一直在准备但迟迟不开头", scores: {L:1, D:1} },
+    { text: "做了但没做完", scores: {I:1, P:1} }
+  ]},
+  { q: "你觉得自己更需要？", opts: [
+    { text: "行动起来的勇气", scores: {I:2, T:1} },
+    { text: "想清楚的方向", scores: {L:2, S:1} },
+    { text: "一个开始的契机", scores: {I:1, B:1} },
+    { text: "能持续下去的节奏", scores: {L:2, P:1} }
+  ]},
+  { q: '你对"有用"这个词？', opts: [
+    { text: "做事当然要有用", scores: {P:2, L:1} },
+    { text: "有用没用做了才知道", scores: {P:1, I:1} },
+    { text: "好玩就行，管它有没有用", scores: {F:2, E:1} },
+    { text: "有些事现在没用以后可能有大用", scores: {P:1, L:1} }
+  ]},
+  { q: "你更愿意花钱在？", opts: [
+    { text: "能提升效率/技能的东西", scores: {P:2, N:1} },
+    { text: "能带来新体验的东西", scores: {F:2, E:1} },
+    { text: "能让自己开心的东西", scores: {F:1, I:1} },
+    { text: "能长期保值的东西", scores: {P:2, L:1} }
+  ]},
+  { q: '你对"做梦"和"现实"的态度？', opts: [
+    { text: "先把现实搞定，才有资格做梦", scores: {P:2, L:1} },
+    { text: "梦就是现实的一部分", scores: {F:2, I:1} },
+    { text: "在现实里找做梦的空间", scores: {F:1, P:1} },
+    { text: "做梦是为了找到更好的现实", scores: {F:1, L:1} }
+  ]},
+  { q: "如果一件事做了注定没结果，你还做吗？", opts: [
+    { text: "不做，时间宝贵", scores: {P:2, L:1} },
+    { text: "做，过程本身就有价值", scores: {F:2, E:1} },
+    { text: "看心情，有时候就是想体验一下", scores: {F:1, I:1} },
+    { text: '不会"注定"没结果，做了才知道', scores: {P:1, I:1} }
+  ]},
+  { q: "你更羡慕哪种人？", opts: [
+    { text: "把生活安排得明明白白的人", scores: {P:2, L:1} },
+    { text: "活得洒脱不管明天的人", scores: {F:2, I:1} },
+    { text: "能在规矩里找到乐趣的人", scores: {P:1, F:1} },
+    { text: "知道什么时候该正经什么时候该放肆的人", scores: {P:1, F:1} }
+  ]},
+  { q: '你觉得"学"和"做"哪个更让你兴奋？', opts: [
+    { text: "学新东西的那一刻", scores: {N:2, B:1} },
+    { text: "用学到的东西做出什么的那一刻", scores: {T:2, C:1} },
+    { text: "学和做交替进行", scores: {N:1, T:1} },
+    { text: "教给别人的时候", scores: {T:2, G:1} }
+  ]},
+  { q: "你的收藏夹/书架/播放列表更接近？", opts: [
+    { text: "一座还没消化的矿", scores: {N:2, B:1} },
+    { text: "做事的弹药库", scores: {T:2, P:1} },
+    { text: "灵感来源，随时翻", scores: {N:1, F:1} },
+    { text: "成品的素材库", scores: {T:2, C:1} }
+  ]},
+  { q: "你更享受？", opts: [
+    { text: "深入了解一个东西的过程", scores: {N:2, D:1} },
+    { text: "把一个东西做出来的过程", scores: {T:2, D:1} },
+    { text: "发现一个新东西的瞬间", scores: {N:1, B:1} },
+    { text: "把东西分享出去的瞬间", scores: {T:1, G:2} }
+  ]},
+  { q: "你觉得自己更需要补的是？", opts: [
+    { text: "多看点、多学点", scores: {N:2, B:1} },
+    { text: "多做点、多产出", scores: {T:2, I:1} },
+    { text: "学的东西怎么用上", scores: {T:1, P:1} },
+    { text: "做的东西怎么更好", scores: {N:1, D:1} }
+  ]},
+  { q: "如果一天只能选一种状态？", opts: [
+    { text: "读/看/听一整天好东西", scores: {N:2, E:1} },
+    { text: "专注做/写/画一整天", scores: {T:2, C:1} },
+    { text: "上午看下午做", scores: {N:1, T:1} },
+    { text: "和人聊一整天，互相激发", scores: {N:1, G:2} }
+  ]}
+];
+
+// ====== 维度定义 ======
+const dimensions = [
+  { code: "C/E", poleA: "C", poleB: "E", labelA: "创造", labelB: "体验" },
+  { code: "S/G", poleA: "S", poleB: "G", labelA: "独处", labelB: "社交" },
+  { code: "D/B", poleA: "D", poleB: "B", labelA: "深度", labelB: "广度" },
+  { code: "I/L", poleA: "I", poleB: "L", labelA: "即刻", labelB: "长期" },
+  { code: "P/F", poleA: "P", poleB: "F", labelA: "务实", labelB: "虚幻" },
+  { code: "N/T", poleA: "N", poleB: "T", labelA: "输入", labelB: "输出" }
+];
+
+// ====== 状态变量 ======
+let currentQuestion = 0;
+let answers = []; // 存每题选择的选项索引
+let scores = {};
+
+// ====== 初始化分数 ======
+function initScores() {
+  scores = { C:0, E:0, S:0, G:0, D:0, B:0, I:0, L:0, P:0, F:0, N:0, T:0 };
+}
+
+// ====== 页面切换 ======
+function showScreen(id) {
+  const screens = ['welcome-screen', 'quiz-screen', 'loading-screen', 'result-screen'];
+  screens.forEach(s => {
+    document.getElementById(s).style.display = 'none';
+  });
+  const target = document.getElementById(id);
+  if (id === 'quiz-screen' || id === 'loading-screen') {
+    target.style.display = 'flex';
+  } else if (id === 'result-screen') {
+    target.style.display = 'flex';
+  } else {
+    target.style.display = 'flex';
+  }
+}
+
+// ====== 开始测试 ======
+function startQuiz() {
+  currentQuestion = 0;
+  answers = [];
+  initScores();
+  showScreen('quiz-screen');
+  renderQuestion();
+}
+
+// ====== 渲染题目 ======
+function renderQuestion() {
+  const q = questions[currentQuestion];
+  const letters = ['A', 'B', 'C', 'D'];
+
+  // 进度
+  const progress = ((currentQuestion + 1) / questions.length) * 100;
+  document.getElementById('progress-text').textContent = `${currentQuestion + 1} / ${questions.length}`;
+  document.getElementById('progress-fill').style.width = progress + '%';
+
+  // 返回按钮
+  document.getElementById('back-btn').disabled = (currentQuestion === 0);
+
+  // 题目卡片 - 重新触发动画
+  const card = document.getElementById('question-card');
+  card.style.animation = 'none';
+  card.offsetHeight; // trigger reflow
+  card.style.animation = 'slideUp 0.4s ease';
+
+  document.getElementById('q-number').textContent = `第 ${currentQuestion + 1} 题`;
+  document.getElementById('q-text').textContent = q.q;
+
+  // 选项
+  const container = document.getElementById('options-container');
+  container.innerHTML = '';
+  q.opts.forEach((opt, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.style.animation = `slideUp 0.4s ease`;
+    btn.style.animationDelay = (0.05 * idx + 0.1) + 's';
+    btn.style.animationFillMode = 'both';
+
+    const letterDiv = document.createElement('div');
+    letterDiv.className = 'option-letter';
+    letterDiv.textContent = letters[idx];
+
+    const textSpan = document.createElement('span');
+    textSpan.textContent = opt.text;
+
+    btn.appendChild(letterDiv);
+    btn.appendChild(textSpan);
+
+    btn.addEventListener('click', function() {
+      selectOption(idx, btn);
+    });
+
+    container.appendChild(btn);
+  });
+}
+
+// ====== 选择选项 ======
+function selectOption(idx, btn) {
+  // 防止重复点击
+  if (btn.classList.contains('selected')) return;
+
+  // 标记选中
+  const allBtns = document.querySelectorAll('.option-btn');
+  allBtns.forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+
+  // 记录答案
+  answers[currentQuestion] = idx;
+
+  // 延迟进入下一题
+  setTimeout(() => {
+    currentQuestion++;
+    if (currentQuestion >= questions.length) {
+      finishQuiz();
+    } else {
+      renderQuestion();
+    }
+  }, 350);
+}
+
+// ====== 返回上一题 ======
+function goBack() {
+  if (currentQuestion > 0) {
+    currentQuestion--;
+    renderQuestion();
+  }
+}
+
+// ====== 完成测试 ======
+function finishQuiz() {
+  // 计算分数
+  initScores();
+  for (let i = 0; i < answers.length; i++) {
+    const opt = questions[i].opts[answers[i]];
+    for (const key in opt.scores) {
+      scores[key] += opt.scores[key];
+    }
+  }
+
+  // 计算画像
+  const profile = calculateProfile();
+
+  // 显示加载页
+  showScreen('loading-screen');
+
+  // 轮换加载提示
+  const subtexts = [
+    "读一读你的回答，想想你可能在意什么",
+    "把那些零散的信号拼一拼...",
+    "快好了，马上为你揭晓..."
+  ];
+  let stIdx = 0;
+  const stInterval = setInterval(() => {
+    stIdx++;
+    if (stIdx < subtexts.length) {
+      document.getElementById('loading-subtext').textContent = subtexts[stIdx];
+    }
+  }, 2500);
+
+  // 调用API
+  callAI(profile).then(result => {
+    clearInterval(stInterval);
+    showResult(profile, result);
+  }).catch(err => {
+    clearInterval(stInterval);
+    showResult(profile, null, err);
+  });
+}
+
+// ====== 计算画像 ======
+function calculateProfile() {
+  let code = '';
+  let flexibleDims = [];
+  let dimDetails = [];
+
+  dimensions.forEach(dim => {
+    const scoreA = scores[dim.poleA];
+    const scoreB = scores[dim.poleB];
+    const diff = Math.abs(scoreA - scoreB);
+
+    let dominant;
+    if (diff <= 2) {
+      flexibleDims.push(`${dim.labelA}↔${dim.labelB}`);
+      // 取较高的那个，如果相等取A
+      dominant = scoreA >= scoreB ? dim.poleA : dim.poleB;
+    } else {
+      dominant = scoreA > scoreB ? dim.poleA : dim.poleB;
+    }
+
+    code += dominant;
+    dimDetails.push({
+      label: `${dim.labelA}(${dim.poleA})${scoreA} vs ${dim.labelB}(${dim.poleB})${scoreB}`,
+      flexible: diff <= 2,
+      poleA: dim.poleA, poleB: dim.poleB,
+      labelA: dim.labelA, labelB: dim.labelB,
+      scoreA: scoreA, scoreB: scoreB
+    });
+  });
+
+  return { code, flexibleDims, dimDetails };
+}
+
+// ====== 调用AI API ======
+async function callAI(profile) {
+  const dimLines = profile.dimDetails.map(d => {
+    return `- ${d.labelA}(${d.poleA})${d.scoreA} vs ${d.labelB}(${d.poleB})${d.scoreB}`;
+  }).join('\n');
+
+  const flexibleLine = profile.flexibleDims.length > 0
+    ? profile.flexibleDims.join('、')
+    : '无';
+
+  const userContent = `用户画像：${profile.code}\n各维度得分：\n${dimLines}\n\n灵活维度（如有）：${flexibleLine}\n\n请根据以上信息猜测用户想做的事。`;
+
+  const requestBody = {
+    model: "deepseek-ai/DeepSeek-V3",
+    messages: [
+      {
+        role: "system",
+        content: "你是一个自我发现引导者。用户刚完成了一个欲望画像测试，请根据用户的画像和得分，猜测用户内心真正想做的事。\n\n规则：\n1. 不说\"你想做X\"，而是说\"你脑子里的那个东西，可能长这样：……\"然后描述画面\n2. 用\"可能\"\"也许\"等词，不用\"就是\"\"一定\"\n3. 描述场景或感觉，让用户自己去认\n4. 永远留退路\n\n输出格式（严格按此格式）：\n\n【你的信号灯亮了】\n（2-3句话，用画面感描述用户可能想做的事）\n\n【要不要试试】\n（给一个5分钟内能动手做的事，具体可操作门槛极低）\n\n【或者完全不是】\n（一句话，给用户轻松退出口）"
+      },
+      {
+        role: "user",
+        content: userContent
+      }
+    ],
+    temperature: 0.8,
+    max_tokens: 500
+  };
+
+  const response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer sk-wvsccfvdujbfjeukvsdutfpofkmfceymjgnhrdfofuxhojzp'
+    },
+    body: JSON.stringify(requestBody)
+  });
+
+  if (!response.ok) {
+    throw new Error(`API请求失败 (${response.status})`);
+  }
+
+  const data = await response.json();
+
+  if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    throw new Error('API返回数据异常');
+  }
+
+  return data.choices[0].message.content;
+}
+
+
+// ====== 离线兜底猜测生成 ======
+function generateFallbackGuess(profile) {
+  const dimMap = {
+    C: {label:'创造', desc:'想做出一个东西来'},
+    E: {label:'体验', desc:'想感受和经历什么'},
+    S: {label:'独处', desc:'想一个人安静地干'},
+    G: {label:'社交', desc:'想和人一起做点什么'},
+    D: {label:'深度', desc:'想把一件事钻到底'},
+    B: {label:'广度', desc:'想什么都试试'},
+    I: {label:'即刻', desc:'想到就想马上动手'},
+    L: {label:'长期', desc:'愿意花时间慢慢来'},
+    P: {label:'务实', desc:'做了得有用'},
+    F: {label:'虚幻', desc:'好玩就行管它有没有用'},
+    N: {label:'输入', desc:'想多看多学多吸收'},
+    T: {label:'输出', desc:'想做出来产出东西'}
+  };
+  
+  const poles = profile.code.split('-');
+  const descs = poles.map(p => {
+    if (dimMap[p]) return dimMap[p].desc;
+    return '';
+  }).filter(d => d);
+  
+  // 拼画面描述
+  let scene = '你脑子里的那个东西，可能长这样——\n\n';
+  
+  // 创造 vs 体验
+  if (poles.includes('C')) scene += '你不是想"体验"什么，是想"做出"什么。';
+  else if (poles.includes('E')) scene += '你想的不是做出一个东西，而是去感受和经历什么。';
+  
+  // 独处 vs 社交
+  if (poles.includes('S')) scene += '而且你想自己干，不想要太多人掺和。';
+  else if (poles.includes('G')) scene += '而且你想和人一起，一个人提不起劲。';
+  
+  // 深度 vs 广度
+  if (poles.includes('D')) scene += '你不是在随便探索，你隐约知道方向了，想钻进去。';
+  else if (poles.includes('B')) scene += '你不想被一件事绑住，想多试几个方向。';
+  
+  // 即刻 vs 长期
+  if (poles.includes('I')) scene += '你烦的是"准备"这个环节，想直接跳到"做"。';
+  else if (poles.includes('L')) scene += '你不急，愿意花时间想清楚再动手。';
+  
+  // 务实 vs 虚幻
+  if (poles.includes('P')) scene += '你做的事得有用，能拿出来说。';
+  else if (poles.includes('F')) scene += '好不好玩比有没有用重要。';
+  
+  // 输入 vs 输出
+  if (poles.includes('T')) scene += '你不想光看光学，你想产出点什么。';
+  else if (poles.includes('N')) scene += '你想先吸收、先看、先学，输出的事再说。';
+  
+  scene += '\n\n也许不全对，但总有那么一两句戳到了。';
+  
+  // 试试看建议
+  let trySuggest = '';
+  if (poles.includes('C') && poles.includes('T')) {
+    trySuggest = '现在打开备忘录，用三行话写下你想做的那个东西是什么样子的。不用完整，写个大概就行。';
+  } else if (poles.includes('E') && poles.includes('B')) {
+    trySuggest = '打开地图，搜一个你从没去过的地方，看看那里的街景。就看看，不用真的去。';
+  } else if (poles.includes('N') && poles.includes('D')) {
+    trySuggest = '找一个你一直想了解的话题，花5分钟看一篇相关文章，别收藏，看完就看完。';
+  } else if (poles.includes('G') && poles.includes('T')) {
+    trySuggest = '找一个朋友，把你最近想做的事跟他说一遍。不用征求建议，说出来本身就是开始。';
+  } else if (poles.includes('I') && poles.includes('F')) {
+    trySuggest = '随便拿张纸，花3分钟画/写点什么，不用有意义，做完就扔也行。';
+  } else {
+    trySuggest = '花5分钟，不看手机，就坐着想一件事：上次你觉得"活着真有意思"是什么时候？在做什么？';
+  }
+  
+  return `【你的信号灯亮了】\n${scene}\n\n【要不要试试】\n${trySuggest}\n\n【或者完全不是】\n要是看完觉得"完全不是我"，那也正常——说明这个方向只是路过你的脑子，放掉它不可惜。`;
+}
+
+// ====== 显示结果 ======
+function showResult(profile, aiContent, error) {
+  showScreen('result-screen');
+
+  // 画像代码
+  document.getElementById('result-code').textContent = profile.code;
+
+  const contentDiv = document.getElementById('result-content');
+
+  if (error) {
+    // API失败时用离线兜底生成结果
+    const fallbackContent = generateFallbackGuess(profile);
+    const sections = parseAIContent(fallbackContent);
+    const colors = ['#b388ff', '#f48fb1', '#ce93d8'];
+    const labels = ['你的信号灯亮了', '要不要试试', '或者完全不是'];
+    let html = '<div class="result-section" style="animation-delay:0.05s;"><div style="font-size:12px;color:#999;text-align:center;margin-bottom:12px;">（离线模式 · 网络恢复后可重试获取更精准结果）</div></div>';
+    for (let i = 0; i < 3; i++) {
+      html += `
+        <div class="result-section" style="animation-delay:${0.1 * i + 0.15}s;">
+          <div class="section-label">
+            <div class="section-dot" style="background:${colors[i]};"></div>
+            <span style="color:${colors[i]};">${labels[i]}</span>
+          </div>
+          <div class="section-text">${sections[i] || ''}</div>
+        </div>
+      `;
+    }
+    html += `<div class="result-section" style="text-align:center;margin-top:20px;"><button class="retry-btn" onclick="retryAI(${JSON.stringify(profile).replace(/"/g, '&quot;')})" style="font-size:14px; padding:10px 28px;opacity:0.7;">重新获取AI解读</button></div>`;
+    contentDiv.innerHTML = html;
+    return;
+  }
+
+  // 解析AI返回的三个板块
+  const sections = parseAIContent(aiContent);
+
+  const colors = ['#b388ff', '#f48fb1', '#ce93d8'];
+  const labels = ['你的信号灯亮了', '要不要试试', '或者完全不是'];
+
+  let html = '';
+  for (let i = 0; i < 3; i++) {
+    html += `
+      <div class="result-section" style="animation-delay:${0.1 * i + 0.1}s;">
+        <div class="section-label">
+          <div class="section-dot" style="background:${colors[i]};"></div>
+          <span style="color:${colors[i]};">${labels[i]}</span>
+        </div>
+        <div class="section-text">${sections[i] || ''}</div>
+      </div>
+    `;
+  }
+
+  contentDiv.innerHTML = html;
+}
+
+// ====== 解析AI返回内容 ======
+function parseAIContent(content) {
+  const sections = ['', '', ''];
+  const labels = ['【你的信号灯亮了】', '【要不要试试】', '【或者完全不是】'];
+
+  let currentIdx = -1;
+  const lines = content.split('\n');
+
+  for (let line of lines) {
+    const trimmed = line.trim();
+    let found = false;
+    for (let i = 0; i < labels.length; i++) {
+      if (trimmed.includes(labels[i])) {
+        currentIdx = i;
+        found = true;
+        break;
+      }
+    }
+    if (!found && currentIdx >= 0 && trimmed) {
+      if (sections[currentIdx]) {
+        sections[currentIdx] += '\n' + trimmed;
+      } else {
+        sections[currentIdx] = trimmed;
+      }
+    }
+  }
+
+  // 如果解析失败，尝试整体放到第一个板块
+  if (!sections[0] && !sections[1] && !sections[2]) {
+    sections[0] = content;
+  }
+
+  return sections;
+}
+
+// ====== 重试AI调用 ======
+function retryAI(profileStr) {
+  const profile = typeof profileStr === 'string' ? JSON.parse(profileStr.replace(/&quot;/g, '"')) : profileStr;
+  showScreen('loading-screen');
+  document.getElementById('loading-subtext').textContent = '再试一次...';
+  callAI(profile).then(result => {
+    showResult(profile, result);
+  }).catch(err => {
+    showResult(profile, null, err);
+  });
+}
+
+// ====== 重新测试 ======
+function resetAll() {
+  currentQuestion = 0;
+  answers = [];
+  initScores();
+  showScreen('welcome-screen');
+}
+
+// ====== 初始化 ======
+initScores();
+</script>
+</body>
+</html>
