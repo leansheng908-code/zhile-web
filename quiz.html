@@ -676,6 +676,91 @@
     .tier-cards { grid-template-columns: 1fr; }
     .welcome-title { font-size: 28px; }
   }
+  /* ====== 维度条 ====== */
+  .dim-bars-section { margin-bottom: 16px; }
+  .dim-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .dim-bar-row:last-child { margin-bottom: 0; }
+  .dim-bar-label {
+    font-size: 12px;
+    white-space: nowrap;
+    min-width: 56px;
+  }
+  .dim-bar-label strong { font-weight: 700; }
+  .dim-bar-a-label { text-align: right; color: #7c4dff; }
+  .dim-bar-b-label { text-align: left; color: #ec407a; }
+  .dim-bar-track {
+    flex: 1;
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    display: flex;
+    background: rgba(0,0,0,0.04);
+  }
+  .dim-bar-fill-a {
+    background: linear-gradient(90deg, #b388ff, #ce93d8);
+    height: 100%;
+    transition: width 0.6s ease;
+  }
+  .dim-bar-fill-b {
+    background: linear-gradient(90deg, #f8bbd0, #f48fb1);
+    height: 100%;
+    transition: width 0.6s ease;
+  }
+  .dim-bar-flexible .dim-bar-track { opacity: 0.65; }
+  .dim-bar-flexible .dim-bar-label { font-style: italic; }
+  .dim-flexible-badge {
+    font-size: 10px;
+    color: #b0a3c8;
+    font-style: italic;
+    white-space: nowrap;
+  }
+
+  /* ====== 来源标注 ====== */
+  .source-label {
+    font-size: 12px;
+    color: #b0a3c8;
+    text-align: center;
+    margin-bottom: 12px;
+    padding: 6px 0;
+  }
+  .source-label.deep {
+    color: #9c6ade;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  /* ====== 深度解读按钮 ====== */
+  .deep-analysis-section {
+    text-align: center;
+    background: linear-gradient(135deg, rgba(156,106,222,0.06), rgba(232,125,166,0.06));
+    border: 1px dashed rgba(156,106,222,0.2);
+  }
+  .deep-analysis-btn {
+    background: linear-gradient(135deg, #9c6ade, #e87da6);
+    color: #fff;
+    border: none;
+    padding: 14px 36px;
+    border-radius: 28px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(156,106,222,0.25);
+    letter-spacing: 1px;
+  }
+  .deep-analysis-btn:active { transform: scale(0.95); }
+  .deep-analysis-btn:disabled { opacity: 0.6; cursor: default; }
+  .deep-analysis-cost {
+    font-size: 12px;
+    font-weight: 400;
+    opacity: 0.85;
+    margin-left: 4px;
+  }
 </style>
 </head>
 <body>
@@ -1189,6 +1274,141 @@ const dimensions = [
   { code: "N/T", poleA: "N", poleB: "T", labelA: "输入", labelB: "输出" }
 ];
 
+// ====== 付费API配置 ======
+const PAID_API = {
+  model: "deepseek-chat",
+  url: "https://api.deepseek.com/v1/chat/completions",
+  key: "sk-5790121f50a54bcfa3d62b74536c3178"
+};
+
+// ====== 备选答案数据（普通版） ======
+const BACKUP_NORMAL = {
+  C: [
+    "你心里隐约有个东西想被做出来，它还不清晰，但你总在琢磨它该是什么样",
+    "你可能注意到自己总在看别人作品时想\u2018我也想要一个自己的版本\u2019",
+    "在别人眼里你可能是个\u2018总有想法\u2019的人，虽然不是每个都落地"
+  ],
+  E: [
+    "你心里有种\u2018想亲身体验\u2019的冲动，光看不够，得到现场才行",
+    "你可能注意到自己收藏了太多想去的地方、想试的事情，列表只增不减",
+    "在别人眼里你可能是个\u2018什么都想试试\u2019的人，有时候他们跟不上你的节奏"
+  ],
+  S: [
+    "你心里最舒服的状态是没人打扰，自己做自己的事，不必解释",
+    "你可能注意到自己总在找独处的时间，哪怕只是关上门待一会儿也好",
+    "在别人眼里你可能有点\u2018不太合群\u2019，但他们不知道你独处时其实很充实"
+  ],
+  G: [
+    "你心里觉得事情得和人一起做才有意思，一个人总觉得缺了什么",
+    "你可能注意到自己有想法时第一反应是找人说，而不是自己先消化",
+    "在别人眼里你可能是个\u2018连接者\u2019，总在张罗、总在把人凑到一起"
+  ],
+  D: [
+    "你心里有种\u2018想钻到底\u2019的劲头，表面看看满足不了你",
+    "你可能注意到自己对一件事感兴趣时会越挖越深，别人觉得够了你还在追",
+    "在别人眼里你可能是个\u2018较真\u2019的人，有时候他们觉得你太执着了"
+  ],
+  B: [
+    "你心里有个\u2018什么都想看看\u2019的声音，世界这么大不想只待在一个角落",
+    "你可能注意到自己的兴趣总在跳，这个还没深入就被下一个吸引了",
+    "在别人眼里你可能是个\u2018什么都知道一点\u2019的人，面很广但不太好定义"
+  ],
+  I: [
+    "你心里有个声音说\u2018现在就做\u2019，等不了也不想等",
+    "你可能注意到自己想到什么就动手，计划对你来说反而是一种阻碍",
+    "在别人眼里你可能是个\u2018行动派\u2019，说干就干，虽然有时候方向会偏"
+  ],
+  L: [
+    "你心里觉得真正值得的事需要时间，急不来也不该急",
+    "你可能注意到自己做事前会先想清楚，哪怕看起来慢但方向稳",
+    "在别人眼里你可能是个\u2018靠谱\u2019的人，说到做到但需要时间"
+  ],
+  P: [
+    "你心里有把尺在量\u2018这事有没有用\u2019，没用的你不太想花时间",
+    "你可能注意到自己做事前会先评估投入产出，不会为了做而做",
+    "在别人眼里你可能是个\u2018务实\u2019的人，不搞虚的，每一步都有目的"
+  ],
+  F: [
+    "你心里觉得\u2018有没有用\u2019不重要，好玩、有意思才是第一位的",
+    "你可能注意到自己经常被\u2018没用但有趣\u2019的东西吸引，而且乐在其中",
+    "在别人眼里你可能是个\u2018随性\u2019的人，不太在乎结果但过程很享受"
+  ],
+  N: [
+    "你心里有种\u2018想多看多学\u2019的渴望，吸收本身就让你满足",
+    "你可能注意到自己总在收藏、总在看，输入量远大于输出",
+    "在别人眼里你可能是个\u2018知识渊博\u2019的人，什么都看过，虽然不一定都用上"
+  ],
+  T: [
+    "你心里有种\u2018想做出来\u2019的冲动，光看不够，得产出点什么才行",
+    "你可能注意到自己看完东西就想写点什么、做点什么来回应",
+    "在别人眼里你可能是个\u2018有产出\u2019的人，总能拿出东西来"
+  ]
+};
+
+// ====== 备选答案数据（深度版） ======
+const BACKUP_PREMIUM = {
+  C: [
+    { desc: "你脑子里不只是一个模糊的想法，而是一整套还没落地的蓝图。你在反复打磨细节，但总觉得自己还没准备好。其实你的\u2018准备\u2019可能已经够了，差的只是第一次动手。", advice: "你可以试试：今天用最简陋的工具做一版粗糙的原型，丑没关系，做出来就行。" },
+    { desc: "你不是一个随手创作的人，你需要它\u2018对\u2019。这种完美主义在保护你，但也在限制你。你可能已经积攒了大量\u2018快要做\u2019的念头，它们在排队等你放行。", advice: "你可以试试：挑一个最小最不重要的想法，故意做得很糙，练习\u2018做完比做好重要\u2019。" },
+    { desc: "你创造的动力不是炫耀，而是一种\u2018不吐不快\u2019的内在驱动。当你没在创造的时候，你会感到某种空洞。这种空洞不是焦虑，而是一种\u2018本该在这里的东西缺了\u2019的感觉。", advice: "你可以试试：给自己设定一个\u2018每日微创作\u2019——5分钟，不需要好，只需要存在。" }
+  ],
+  E: [
+    { desc: "你不是一个旁观者，你需要\u2018在场\u2019。视频、图片、文字都只是预告片，你想要的是全身心投入的体验本身。你的体验清单可能已经很长了，但真正让你焦虑的不是去不了，而是\u2018万一去了发现不过如此\u2019。", advice: "你可以试试：从清单里选最近的一个，本周就去，哪怕只有半小时。" },
+    { desc: "你的体验欲不是消遣，而是一种\u2018通过感受来理解世界\u2019的方式。你在用身体而非大脑去认知。别人可能觉得你\u2018不安分\u2019，但对你来说，待在原地才是真正的消耗。", advice: "你可以试试：今天去一个没去过的街区走15分钟，不带目的，只是感受。" },
+    { desc: "你追求的不是新鲜感本身，而是那种\u2018第一次见到\u2019的震颤感。你可能已经发现这种感觉越来越难获得了，因为你看过的太多了。但真正稀缺的不是新地方，而是新视角。", advice: "你可以试试：用完全不同的方式做一件日常的事——倒着走路、用非惯用手吃饭、闭眼听一段路。" }
+  ],
+  S: [
+    { desc: "你的独处不是逃避，而是你的核心工作状态。在独处中你不是在休息，而是在处理、消化、创造。别人理解的\u2018孤独\u2019对你来说是\u2018满载运行\u2019。但你需要警惕的是，独处太久可能变成舒适区的牢笼。", advice: "你可以试试：每周至少有一次带着自己的思考去找一个人聊，哪怕只是分享一个想法。" },
+    { desc: "你的独处是有质量的——你在独处时的产出可能比在群体中高十倍。这不是因为你社交能力差，而是因为你的能量模式决定了你需要\u2018静\u2019才能\u2018动\u2019。", advice: "你可以试试：把你独处时产出的东西整理一次，看看它们之间的联系，你可能比自己以为的更有体系。" },
+    { desc: "你的独处有时会滑向\u2018与世隔绝\u2019的边界。享受独处和害怕被看见是两件事，你需要分清自己是在\u2018选择独处\u2019还是在\u2018回避社交\u2019。", advice: "你可以试试：这周主动发起一次你真正想去的社交活动，哪怕只是一起吃个饭，观察自己的感受。" }
+  ],
+  G: [
+    { desc: "你的社交不是消磨时间，而是你的信息处理方式。你在对话中思考、在互动中产生灵感。一个人待着时你可能会觉得\u2018卡住了\u2019，但和人一聊就通了。", advice: "你可以试试：找一个你信任的人，把你最近最模糊的想法说给他听，不求反馈，只求\u2018说出来\u2019。" },
+    { desc: "你有一个隐形的社交雷达，总在感知谁和谁可以连在一起、什么事可以一起做。你是天然的连接者，但有时候你会为了\u2018维持关系\u2019而忽略自己的真实需求。", advice: "你可以试试：这周说一次\u2018不\u2019——拒绝一个你其实不想去的局，看看天会不会塌。" },
+    { desc: "你在人群中获得的能量是真实的，但你需要分辨\u2018充电型社交\u2019和\u2018消耗型社交\u2019。不是所有社交都让你更好，有些只是在消耗你的注意力。", advice: "你可以试试：列一个清单，把最近的社交按\u2018充电/消耗\u2019分类，下周多安排前者。" }
+  ],
+  D: [
+    { desc: "你的深度不是刻意为之，而是你天然的信息处理方式。别人看到表面就满足了，你却自动往深处钻。这种特质让你在某些领域积累了远超常人的洞察，但也可能让你在某些\u2018差不多就行\u2019的场景里显得格格不入。", advice: "你可以试试：把你最深入的一个领域写一篇500字的科普，给完全不懂的人看。" },
+    { desc: "你的\u2018钻到底\u2019有时会变成\u2018钻牛角尖\u2019。深度是你的优势，但当深度变成固执时，它就从资产变成了负债。你需要学会区分\u2018值得深挖\u2019和\u2018已经到底了\u2019。", advice: "你可以试试：给你正在深挖的事情设一个时间盒——再投入2小时，如果没有新发现就切换。" },
+    { desc: "你的深度追求可能让你忽略了\u2018广度\u2019的价值。有些答案不在更深处，而在隔壁领域。你的盲点可能是：你以为还需要更深入，其实你需要的是换一个角度。", advice: "你可以试试：读一篇和你当前领域完全无关的文章，看看能不能找到交叉点。" }
+  ],
+  B: [
+    { desc: "你的广度不是浅尝辄止，而是一种\u2018快速建模\u2019的能力。你能在短时间内抓住一个领域的核心框架，然后跳到下一个。这种能力在信息爆炸的时代极其珍贵，但你的焦虑可能是\u2018什么都懂一点但什么都不精\u2019。", advice: "你可以试试：选一个你最频繁接触的领域，花一周时间专门深入，感受\u2018精\u2019的乐趣。" },
+    { desc: "你的兴趣跳跃不是缺乏专注力，而是你的认知方式——你是通过\u2018试错\u2019来学习的，每个领域都给你一块拼图。但你需要警惕\u2018假性广度\u2019：收藏了不等于学过了，看过了不等于掌握了。", advice: "你可以试试：把你最近3个月\u2018接触过\u2019的领域列出来，诚实标注哪些是\u2018真的理解了\u2019，哪些只是\u2018看了一眼\u2019。" },
+    { desc: "你的广度让你成为一个很好的\u2018翻译者\u2019——你能把不同领域的概念连起来，这是很多人做不到的。但你可能在\u2018连接\u2019上花的时间不够，只是在\u2018收集\u2019。", advice: "你可以试试：找两个你了解的领域，写一段话说明它们之间的联系，哪怕只是类比。" }
+  ],
+  I: [
+    { desc: "你的\u2018马上就做\u2019不是冲动，而是你天然的能量模式——你的动力窗口很短但很猛。拖延对你来说不是\u2018不想做\u2019，而是\u2018错过了那个瞬间\u2019。你的挑战不是如何开始，而是如何延续。", advice: "你可以试试：下次冲动来的时候，只做第一步——不规划、不准备，只做第一步，哪怕只有30秒。" },
+    { desc: "你的行动力是你的超级优势，但它有一个隐藏代价：你可能跳过了\u2018想清楚\u2019的环节。不是所有事都需要想清楚，但有些事多想5分钟能省5小时。", advice: "你可以试试：下次想做一件事时，先花2分钟写\u2018如果我做了，最坏的结果是什么\u2019，然后再决定做不做。" },
+    { desc: "你的即刻行动有时会让周围的人跟不上节奏，他们可能觉得你\u2018太急\u2019。但对你来说，等待就是能量流失。你需要做的不是\u2018慢下来\u2019，而是\u2018让别人跟上\u2019——提前沟通你的节奏。", advice: "你可以试试：下次想立刻开始一件事时，先花1分钟和关键的人同步你的想法。" }
+  ],
+  L: [
+    { desc: "你的\u2018慢慢来\u2019不是拖延，而是你在做长期投资。你看到的不是眼前的回报，而是三年后的复利。这种思维方式让你在很多场景中显得\u2018慢半拍\u2019但\u2018后劲足\u2019。你的风险是：有些机会窗口很短，等你准备好了它就关了。", advice: "你可以试试：给你正在\u2018准备\u2019的事情设一个最终启动日期，写在日历上。" },
+    { desc: "你的长期主义可能变成了一种\u2018完美主义拖延\u2019——你告诉自己\u2018还没准备好\u2019，但也许你永远不会觉得\u2018完全准备好了\u2019。真正的长期主义者不是等到万事俱备，而是在路上不断调整。", advice: "你可以试试：把你的大目标拆成最小可执行的第一步，今天就走一步，哪怕歪歪扭扭。" },
+    { desc: "你的耐心是你的稀缺资源，但你需要分清\u2018战略性耐心\u2019和\u2018惯性等待\u2019。前者是主动选择等待时机，后者是不敢开始找的借口。", advice: "你可以试试：问自己一个问题——\u2018如果这件事永远准备不好，我会不会后悔没早点开始？\u2019如果答案是会，那就该动了。" }
+  ],
+  P: [
+    { desc: "你的\u2018有没有用\u2019不是功利，而是你对时间价值的敏感。你天然会评估投入产出比，这让你在资源有限时总能做出最优选择。但你的盲区可能是：有些\u2018无用\u2019的事，长远来看恰恰是最有用的。", advice: "你可以试试：这周花1小时做一件\u2018完全没用\u2019的事，看看会不会有意外的收获。" },
+    { desc: "你的务实让你成为一个可靠的执行者，但有时候你的\u2018有用\u2019标准可能太窄了。情感价值、体验价值、探索价值——这些\u2018没用\u2019的东西往往是你人生故事的素材。", advice: "你可以试试：定义三种\u2018有用\u2019——实用的有用、情感的有用、成长的有用，然后看看你最近做的事覆盖了几种。" },
+    { desc: "你的务实是一种保护机制——你不浪费资源在没把握的事上。但过度务实可能让你错过\u2018低概率高回报\u2019的机会。有些事做了大概率没用，但万一有用就改变一切。", advice: "你可以试试：列一件你一直觉得\u2018没用\u2019但心里想做的事，评估一下它的上限——如果成了，值多少。" }
+  ],
+  F: [
+    { desc: "你的\u2018好玩就行\u2019不是不负责任，而是你对\u2018意义\u2019有不同定义。对别人来说意义是产出和回报，对你来说意义是体验和感受本身。你可能比大多数人更早意识到了\u2018活着\u2019不等同于\u2018产出\u2019。", advice: "你可以试试：把你最近\u2018纯粹因为好玩\u2019做的事列出来，看看它们是否其实给了你某种隐性的能量。" },
+    { desc: "你的随性背后有一种智慧——你知道过度规划会杀死可能性。但你的风险是\u2018只有虚幻没有落地\u2019，好想法一直在空中飘。", advice: "你可以试试：挑一个你\u2018纯粹好玩\u2019的想法，给它一个最小的落地形态——不需要完美，需要存在。" },
+    { desc: "你的\u2018虚幻\u2019倾向可能让你在务实的世界里显得不靠谱。但你的价值恰恰在于：你能看到务实者看不到的可能性。你需要做的是学会用务实者听得懂的语言来翻译你的\u2018虚幻\u2019。", advice: "你可以试试：把你最近一个\u2018不切实际\u2019的想法写成一个3句话的方案——问题、方案、第一步。" }
+  ],
+  N: [
+    { desc: "你的\u2018多看多学\u2019不是信息焦虑，而是一种天然的认知驱动。你的大脑像一台高性能输入机器，吸收本身就能给你多巴胺。但你的瓶颈可能在\u2018转化\u2019——输入了却没有变成输出或行动。", advice: "你可以试试：这周选一篇你收藏了但没消化的文章，写3句你的感想——不是总结，是你的反应。" },
+    { desc: "你的输入量可能远超你的输出量，这造成了某种\u2018知识肥胖症\u2019——吸收了很多但消化不良。你不是学得不够多，而是用得太少了。", advice: "你可以试试：实施\u2018一进一出\u2019规则——看一篇就产出一篇（哪怕只是一条朋友圈），强制消化。" },
+    { desc: "你的输入习惯可能让你成为\u2018什么都知道\u2019的人，但也可能让你成为\u2018什么都不做\u2019的人。信息本身不改变现实，行动才改变。你的舒适区是\u2018继续看\u2019，你的成长区是\u2018开始做\u2019。", advice: "你可以试试：给自己设一个\u2018输入禁令\u2019——明天一天不看任何新内容，只能消化已有的。" }
+  ],
+  T: [
+    { desc: "你的\u2018想产出\u2019不是表现欲，而是你处理信息的方式——你必须通过\u2018做出来\u2019才能理解。对你来说，输出就是学习。你的风险是\u2018为了输出而输出\u2019——产出数量上去了但质量没跟上。", advice: "你可以试试：回顾你最近的输出，找出最有深度的一个，花时间打磨它——不是多做，是做精。" },
+    { desc: "你的输出驱动让你在很多人中脱颖而出，因为大多数人只输入不输出。但你的盲区可能是：你的输出有没有真正服务于你想解决的问题？还是只是在\u2018忙碌地产出\u2019？", advice: "你可以试试：问自己——\u2018我最近产出最有价值的东西是什么？它解决了谁的什么问题？\u2019" },
+    { desc: "你的输出欲很强，但你的输入可能跟不上。当输入不足时，输出会变成\u2018空心循环\u2019——看起来在产出，实际上在重复自己。你需要周期性\u2018闭嘴\u2019，回去充电。", advice: "你可以试试：给自己设一个\u2018输出斋戒\u2019——一周不产出任何新内容，只看和想，然后看你的输出质量是否提升。" }
+  ]
+};
+
 // ====== 档位配置 ======
 const TIERS = {
   free:    { name: '免费试穿', questionCount: 5,  totalAdsToUnlock: 0, adsToUnlockAnswer: 1, consumeCredits: 0 },
@@ -1257,6 +1477,10 @@ function updateCreditsDisplay() {
       statusEl.textContent = '需要3积分（当前' + credits + '）';
     }
   }
+
+  // Update deep analysis button credits
+  var deepCost = document.querySelector('.deep-analysis-cost');
+  if (deepCost) deepCost.textContent = '消耗3积分（当前' + credits + '）';
 
   // Update tier lock/unlock based on total ads
   var totalAds = getTotalAds();
@@ -1550,17 +1774,19 @@ function proceedToResults() {
     const safetyTimeout = setTimeout(() => {
       clearInterval(stInterval);
       console.log('Safety timeout triggered');
-      showResult(profile, null, new Error('超时'));
+      var backupContent = assembleNormalBackup(profile);
+      showResult(profile, backupContent, null, 'normal_backup');
     }, 20000);
 
     callAI(profile).then(result => {
       clearInterval(stInterval);
       clearTimeout(safetyTimeout);
-      showResult(profile, result);
+      showResult(profile, result, null, 'free_ai');
     }).catch(err => {
       clearInterval(stInterval);
       clearTimeout(safetyTimeout);
-      showResult(profile, null, err);
+      var backupContent = assembleNormalBackup(profile);
+      showResult(profile, backupContent, null, 'normal_backup');
     });
   } catch(e) {
     console.error('proceedToResults error:', e);
@@ -1574,7 +1800,7 @@ function proceedToResults() {
 
 // ====== 计算画像 ======
 function calculateProfile() {
-  let code = '';
+  let codeParts = [];
   let flexibleDims = [];
   let dimDetails = [];
 
@@ -1591,7 +1817,7 @@ function calculateProfile() {
       dominant = scoreA > scoreB ? dim.poleA : dim.poleB;
     }
 
-    code += dominant;
+    codeParts.push(dominant);
     dimDetails.push({
       label: dim.labelA + '(' + dim.poleA + ')' + scoreA + ' vs ' + dim.labelB + '(' + dim.poleB + ')' + scoreB,
       flexible: diff <= 2,
@@ -1601,6 +1827,7 @@ function calculateProfile() {
     });
   });
 
+  let code = codeParts.join('-');
   return { code, flexibleDims, dimDetails };
 }
 
@@ -1618,7 +1845,7 @@ async function callAI(profile) {
   const userContent = '用户画像：' + profile.code + '\n各维度得分：\n' + dimLines + '\n\n灵活维度（如有）：' + flexibleLine + '\n\n请根据以上信息猜测用户想做的事。';
 
   const requestBody = {
-    model: "deepseek-chat",
+    model: "Qwen/Qwen2.5-7B-Instruct",
     messages: [
       {
         role: "system",
@@ -1636,11 +1863,11 @@ async function callAI(profile) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-  const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+  const response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer sk-6dbc357911284a5bb25a31e0fad932db'
+      'Authorization': 'Bearer sk-wvsccfvdujbfjeukvsdutfpofkmfceymjgnhrdfofuxhojzp'
     },
     body: JSON.stringify(requestBody),
     signal: controller.signal
@@ -1724,43 +1951,59 @@ function generateFallbackGuess(profile) {
 }
 
 // ====== 显示结果 ======
-function showResult(profile, aiContent, error) {
+function showResult(profile, content, error, source) {
   showScreen('result-screen');
   document.getElementById('result-code').textContent = profile.code;
 
-  const creditsEl = document.getElementById('result-credits-num');
+  var creditsEl = document.getElementById('result-credits-num');
   if (creditsEl) creditsEl.textContent = getCredits();
 
-  const contentDiv = document.getElementById('result-content');
+  var contentDiv = document.getElementById('result-content');
 
-  if (error) {
-    const fallbackContent = generateFallbackGuess(profile);
-    const sections = parseAIContent(fallbackContent);
-    const colors = ['#b388ff', '#f48fb1', '#ce93d8'];
-    const labels = ['你的信号灯亮了', '要不要试试', '或者完全不是'];
-    let html = '<div class="result-section" style="animation-delay:0.05s;"><div style="font-size:12px;color:#999;text-align:center;margin-bottom:12px;">（离线模式 · 网络恢复后可重试获取更精准结果）</div></div>';
-    for (let i = 0; i < 3; i++) {
-      html += '<div class="result-section" style="animation-delay:' + (0.1 * i + 0.15) + 's;">' +
-        '<div class="section-label"><div class="section-dot" style="background:' + colors[i] + ';"></div>' +
-        '<span style="color:' + colors[i] + ';">' + labels[i] + '</span></div>' +
-        '<div class="section-text">' + (sections[i] || '') + '</div></div>';
-    }
-    html += '<div class="result-section" style="text-align:center;margin-top:20px;">' +
-      '<button class="retry-btn" onclick="retryAI()" style="font-size:14px;padding:10px 28px;opacity:0.7;">重新获取AI解读</button></div>';
-    contentDiv.innerHTML = html;
-    return;
+  // --- 维度条 ---
+  var html = renderDimensionBars(profile);
+
+  // --- 来源标注 ---
+  if (source === 'normal_backup') {
+    html += '<div class="source-label">\uff08\u53c2\u8003\u63cf\u8ff0 \u00b7 \u7f51\u7edc\u6062\u590d\u540e\u53ef\u91cd\u8bd5\uff09</div>';
+  } else if (source === 'deep_ai') {
+    html += '<div class="source-label deep">\u2728 \u6df1\u5ea6\u89e3\u8bfb</div>';
+  } else if (source === 'deep_backup') {
+    html += '<div class="source-label deep">\u2728 \u6df1\u5ea6\u89e3\u8bfb\uff08\u53c2\u8003\u7248\uff09</div>';
   }
 
-  const sections = parseAIContent(aiContent);
-  const colors = ['#b388ff', '#f48fb1', '#ce93d8'];
-  const labels = ['你的信号灯亮了', '要不要试试', '或者完全不是'];
+  // --- 内容 ---
+  var actualContent = content;
+  if (!actualContent) {
+    actualContent = generateFallbackGuess(profile);
+  }
 
-  let html = '';
-  for (let i = 0; i < 3; i++) {
+  var sections = parseAIContent(actualContent);
+  var colors = ['#b388ff', '#f48fb1', '#ce93d8'];
+  var labels = ['\u4f60\u7684\u4fe1\u53f7\u706f\u4eae\u4e86', '\u8981\u4e0d\u8981\u8bd5\u8bd5', '\u6216\u8005\u5b8c\u5168\u4e0d\u662f'];
+
+  for (var i = 0; i < 3; i++) {
     html += '<div class="result-section" style="animation-delay:' + (0.1 * i + 0.1) + 's;">' +
       '<div class="section-label"><div class="section-dot" style="background:' + colors[i] + ';"></div>' +
       '<span style="color:' + colors[i] + ';">' + labels[i] + '</span></div>' +
       '<div class="section-text">' + (sections[i] || '') + '</div></div>';
+  }
+
+  // --- 深度解读按钮（未深度解读时显示） ---
+  if (source !== 'deep_ai' && source !== 'deep_backup') {
+    html += '<div class="result-section deep-analysis-section" style="animation-delay:0.4s;">' +
+      '<button class="deep-analysis-btn" id="deep-analysis-btn" onclick="deepAnalysis()">' +
+      '\u2728 \u6df1\u5ea6\u89e3\u8bfb <span class="deep-analysis-cost">\u6d88\u80173\u79ef\u5206\uff08\u5f53\u524d' + getCredits() + '\uff09</span>' +
+      '</button></div>';
+  }
+
+  // --- 重试按钮（备选来源时显示） ---
+  if (source === 'normal_backup') {
+    html += '<div class="result-section" style="text-align:center;margin-top:8px;">' +
+      '<button class="retry-btn" onclick="retryAI()" style="font-size:14px;padding:10px 28px;opacity:0.7;">\u91cd\u65b0\u83b7\u53d6AI\u89e3\u8bfb</button></div>';
+  } else if (source === 'deep_backup') {
+    html += '<div class="result-section" style="text-align:center;margin-top:8px;">' +
+      '<button class="retry-btn" onclick="retryDeepAnalysis()" style="font-size:14px;padding:10px 28px;opacity:0.7;">\u91cd\u65b0\u6df1\u5ea6\u89e3\u8bfb</button></div>';
   }
 
   contentDiv.innerHTML = html;
@@ -1804,11 +2047,12 @@ function parseAIContent(content) {
 function retryAI() {
   if (!lastProfile) return;
   showScreen('loading-screen');
-  document.getElementById('loading-subtext').textContent = '再试一次...';
+  document.getElementById('loading-subtext').textContent = '\u518d\u8bd5\u4e00\u6b21...';
   callAI(lastProfile).then(result => {
-    showResult(lastProfile, result);
+    showResult(lastProfile, result, null, 'free_ai');
   }).catch(err => {
-    showResult(lastProfile, null, err);
+    var backupContent = assembleNormalBackup(lastProfile);
+    showResult(lastProfile, backupContent, null, 'normal_backup');
   });
 }
 
@@ -1824,6 +2068,231 @@ function resetAll() {
   adsNeededInGate = 0;
   showScreen('welcome-screen');
   updateCreditsDisplay();
+}
+
+// ====== 维度条渲染 ======
+function renderDimensionBars(profile) {
+  var html = '<div class="result-section dim-bars-section" style="animation-delay:0.05s;">';
+  html += '<div class="section-label"><div class="section-dot" style="background:#9c6ade;"></div><span style="color:#9c6ade;">\u7ef4\u5ea6\u5206\u5e03</span></div>';
+
+  profile.dimDetails.forEach(function(dim) {
+    var total = dim.scoreA + dim.scoreB;
+    var pctA = total > 0 ? (dim.scoreA / total * 100) : 50;
+    var pctB = total > 0 ? (dim.scoreB / total * 100) : 50;
+    var isFlexible = dim.flexible;
+
+    html += '<div class="dim-bar-row' + (isFlexible ? ' dim-bar-flexible' : '') + '">';
+    html += '<span class="dim-bar-label dim-bar-a-label">' + dim.labelA + ' <strong>' + dim.scoreA + '</strong></span>';
+    html += '<div class="dim-bar-track">';
+    html += '<div class="dim-bar-fill-a" style="width:' + pctA + '%;"></div>';
+    html += '<div class="dim-bar-fill-b" style="width:' + pctB + '%;"></div>';
+    html += '</div>';
+    html += '<span class="dim-bar-label dim-bar-b-label">' + dim.labelB + ' <strong>' + dim.scoreB + '</strong></span>';
+    if (isFlexible) html += '<span class="dim-flexible-badge">\u7075\u6d3b</span>';
+    html += '</div>';
+  });
+
+  html += '</div>';
+  return html;
+}
+
+// ====== 付费API调用 ======
+async function callDeepSeek(profile) {
+  console.log('callDeepSeek started, profile:', profile.code);
+  var dimLines = profile.dimDetails.map(function(d) {
+    return '- ' + d.labelA + '(' + d.poleA + ')' + d.scoreA + ' vs ' + d.labelB + '(' + d.poleB + ')' + d.scoreB;
+  }).join('\n');
+
+  var flexibleLine = profile.flexibleDims.length > 0 ? profile.flexibleDims.join('\u3001') : '\u65e0';
+
+  var userContent = '\u7528\u6237\u753b\u50cf\uff1a' + profile.code + '\n\u5404\u7ef4\u5ea6\u5f97\u5206\uff1a\n' + dimLines + '\n\n\u7075\u6d3b\u7ef4\u5ea6\uff08\u5982\u6709\uff09\uff1a' + flexibleLine + '\n\n\u8bf7\u6839\u636e\u4ee5\u4e0a\u4fe1\u606f\uff0c\u8fdb\u884c\u6df1\u5ea6\u5206\u6790\u3002';
+
+  var requestBody = {
+    model: PAID_API.model,
+    messages: [
+      {
+        role: "system",
+        content: "\u4f60\u662f\u4e00\u4f4d\u6df1\u5ea6\u7684\u81ea\u6211\u53d1\u73b0\u5f15\u5bfc\u8005\uff0c\u64c5\u957f\u4ece\u6b32\u671b\u753b\u50cf\u4e2d\u8bfb\u51fa\u4e00\u4e2a\u4eba\u5185\u5fc3\u6df1\u5904\u672a\u88ab\u8a00\u8bf4\u7684\u6e34\u671b\u3002\n\n\u4f60\u7684\u5206\u6790\u539f\u5219\uff1a\n1. \u4e0d\u8bf4\u201c\u4f60\u60f3\u505aX\u201d\uff0c\u800c\u662f\u7528\u753b\u9762\u548c\u611f\u53d7\u6765\u63cf\u7ed8\uff0c\u8ba9\u7528\u6237\u81ea\u5df1\u53bb\u8ba4\u9886\n2. \u7528\u201c\u53ef\u80fd\u201d\u201c\u4e5f\u8bb8\u201d\u201c\u6216\u8bb8\u201d\u7b49\u8bcd\uff0c\u6c38\u8fdc\u7559\u9000\u8def\uff0c\u4e0d\u7528\u201c\u5c31\u662f\u201d\u201c\u4e00\u5b9a\u201d\n3. \u63cf\u8ff0\u8981\u5177\u4f53\u5230\u573a\u666f\uff1a\u4ec0\u4e48\u65f6\u95f4\u3001\u4ec0\u4e48\u73af\u5883\u3001\u4ec0\u4e48\u611f\u89c9\u3001\u4ec0\u4e48\u52a8\u4f5c\n4. \u753b\u50cf\u7684\u6bcf\u4e2a\u7ef4\u5ea6\u90fd\u4e0d\u662f\u5b64\u7acb\u7684\uff0c\u8981\u4ea4\u53c9\u5206\u6790\u7ef4\u5ea6\u4e4b\u95f4\u7684\u5173\u7cfb\n5. \u6ce8\u610f\u201c\u7075\u6d3b\u7ef4\u5ea6\u201d\u2014\u2014\u5982\u679c\u67d0\u4e2a\u7ef4\u5ea6\u5f97\u5206\u63a5\u8fd1\uff0c\u8bf4\u660e\u7528\u6237\u5728\u8fd9\u4e2a\u65b9\u5411\u4e0a\u8fd8\u5728\u6447\u6446\uff0c\u8fd9\u672c\u8eab\u5c31\u662f\u91cd\u8981\u4fe1\u606f\n6. \u6210\u957f\u5efa\u8bae\u8981\u5177\u4f53\u53ef\u64cd\u4f5c\uff1a5\u5206\u949f\u5185\u80fd\u5f00\u59cb\u3001\u4e0d\u9700\u8981\u7279\u6b8a\u5de5\u5177\u3001\u95e8\u69db\u6781\u4f4e\n7. \u7ed3\u5c3e\u7559\u53e3\u8981\u771f\u8bda\uff0c\u4e0d\u662f\u6577\u884d\uff0c\u800c\u662f\u771f\u6b63\u7406\u89e3\u201c\u4e5f\u8bb8\u8fd9\u6b21\u6ca1\u8bf4\u4e2d\u201d\n\n\u8f93\u51fa\u683c\u5f0f\uff08\u4e25\u683c\u6309\u6b64\u683c\u5f0f\uff09\uff1a\n\n\u3010\u4f60\u7684\u4fe1\u53f7\u706f\u4eae\u4e86\u3011\n\uff084-6\u53e5\u8bdd\uff0c\u7528\u7ec6\u817b\u7684\u753b\u9762\u611f\u63cf\u8ff0\u7528\u6237\u53ef\u80fd\u60f3\u505a\u7684\u4e8b\u3002\u4e0d\u662f\u6982\u62ec\uff0c\u800c\u662f\u63cf\u7ed8\u4e00\u4e2a\u5177\u4f53\u7684\u573a\u666f\u2014\u2014\u4f60\u5728\u54ea\u91cc\u3001\u5728\u505a\u4ec0\u4e48\u3001\u5468\u56f4\u662f\u4ec0\u4e48\u611f\u89c9\u3002\u4ea4\u53c9\u5206\u6790\u591a\u4e2a\u7ef4\u5ea6\u7684\u7ec4\u5408\u542b\u4e49\u3002\uff09\n\n\u3010\u8981\u4e0d\u8981\u8bd5\u8bd5\u3011\n\uff08\u7ed9\u4e00\u4e2a5\u5206\u949f\u5185\u80fd\u52a8\u624b\u505a\u7684\u4e8b\uff0c\u5177\u4f53\u53ef\u64cd\u4f5c\u3002\u4e0d\u662f\u201c\u4f60\u53ef\u4ee5\u8bd5\u8bd5XX\u201d\u8fd9\u79cd\u6a21\u7cca\u5efa\u8bae\uff0c\u800c\u662f\u201c\u73b0\u5728\u6253\u5f00XX\uff0c\u505aXX\u201d\u8fd9\u79cd\u53ef\u4ee5\u76f4\u63a5\u6267\u884c\u7684\u6307\u4ee4\u3002\uff09\n\n\u3010\u6216\u8005\u5b8c\u5168\u4e0d\u662f\u3011\n\uff082-3\u53e5\u8bdd\uff0c\u771f\u8bda\u5730\u7ed9\u7528\u6237\u9000\u51fa\u53e3\u3002\u4e0d\u662f\u8bf4\u201c\u90a3\u5c31\u4e0d\u662f\u201d\uff0c\u800c\u662f\u7406\u89e3\u201c\u4e5f\u8bb8\u8fd9\u6b21\u6ca1\u8bf4\u4e2d\uff0c\u4f46\u4f60\u7684\u7b54\u6848\u53ea\u6709\u4f60\u81ea\u5df1\u77e5\u9053\u201d\u3002\uff09"
+      },
+      {
+        role: "user",
+        content: userContent
+      }
+    ],
+    temperature: 0.85,
+    max_tokens: 800
+  };
+
+  var controller = new AbortController();
+  var timeoutId = setTimeout(function() { controller.abort(); }, 20000);
+
+  var response = await fetch(PAID_API.url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + PAID_API.key
+    },
+    body: JSON.stringify(requestBody),
+    signal: controller.signal
+  });
+  clearTimeout(timeoutId);
+
+  if (!response.ok) {
+    throw new Error('DeepSeek API\u8bf7\u6c42\u5931\u8d25 (' + response.status + ')');
+  }
+
+  var data = await response.json();
+
+  if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    throw new Error('DeepSeek API\u8fd4\u56de\u6570\u636e\u5f02\u5e38');
+  }
+
+  return data.choices[0].message.content;
+}
+
+// ====== 备选防重复 ======
+function getBackupIndex(pole, maxCount) {
+  var key = 'backup_used_' + pole;
+  var used;
+  try { used = JSON.parse(sessionStorage.getItem(key) || '[]'); } catch(e) { used = []; }
+
+  if (used.length >= maxCount) {
+    used = [];
+  }
+
+  var available = [];
+  for (var i = 0; i < maxCount; i++) {
+    if (used.indexOf(i) === -1) available.push(i);
+  }
+
+  var idx = available[Math.floor(Math.random() * available.length)];
+  used.push(idx);
+  try { sessionStorage.setItem(key, JSON.stringify(used)); } catch(e) {}
+
+  return idx;
+}
+
+// ====== 普通备选拼装 ======
+function assembleNormalBackup(profile) {
+  try {
+    var poles = profile.code.split('-');
+
+    var parts = [];
+    poles.forEach(function(p) {
+      if (BACKUP_NORMAL[p]) {
+        var idx = getBackupIndex(p, BACKUP_NORMAL[p].length);
+        parts.push(BACKUP_NORMAL[p][idx]);
+      }
+    });
+
+    var scene = '\u4f60\u8111\u5b50\u91cc\u7684\u90a3\u4e2a\u4e1c\u897f\uff0c\u53ef\u80fd\u957f\u8fd9\u6837\u2014\u2014\n\n';
+    scene += parts.join('\u3002') + '\u3002';
+    scene += '\n\n\u4e5f\u8bb8\u4e0d\u5168\u5bf9\uff0c\u4f46\u603b\u6709\u90a3\u4e48\u4e00\u4e24\u53e5\u621e\u5230\u4e86\u3002';
+
+    var trySuggest = '\u82b15\u5206\u949f\uff0c\u4e0d\u770b\u624b\u673a\uff0c\u5c31\u5750\u7740\u60f3\u4e00\u4ef6\u4e8b\uff1a\u4e0a\u6b21\u4f60\u89c9\u5f97\u201c\u6d3b\u7740\u771f\u6709\u610f\u601d\u201d\u662f\u4ec0\u4e48\u65f6\u5019\uff1f\u5728\u505a\u4ec0\u4e48\uff1f';
+
+    return '\u3010\u4f60\u7684\u4fe1\u53f7\u706f\u4eae\u4e86\u3011\n' + scene + '\n\n\u3010\u8981\u4e0d\u8981\u8bd5\u8bd5\u3011\n' + trySuggest + '\n\n\u3010\u6216\u8005\u5b8c\u5168\u4e0d\u662f\u3011\n\u8981\u662f\u770b\u5b8c\u89c9\u5f97\u201c\u5b8c\u5168\u4e0d\u662f\u6211\u201d\uff0c\u90a3\u4e5f\u6b63\u5e38\u2014\u2014\u8bf4\u660e\u8fd9\u4e2a\u65b9\u5411\u53ea\u662f\u8def\u8fc7\u4f60\u7684\u8111\u5b50\uff0c\u653e\u6389\u5b83\u4e0d\u53ef\u60dc\u3002';
+  } catch(e) {
+    console.error('assembleNormalBackup error:', e);
+    return generateFallbackGuess(profile);
+  }
+}
+
+// ====== 付费备选拼装 ======
+function assemblePremiumBackup(profile) {
+  try {
+    var poles = profile.code.split('-');
+
+    var parts = [];
+    var advices = [];
+    poles.forEach(function(p) {
+      if (BACKUP_PREMIUM[p]) {
+        var idx = getBackupIndex('premium_' + p, BACKUP_PREMIUM[p].length);
+        var item = BACKUP_PREMIUM[p][idx];
+        parts.push(item.desc);
+        if (item.advice) advices.push(item.advice);
+      }
+    });
+
+    var scene = '\u4f60\u8111\u5b50\u91cc\u7684\u90a3\u4e2a\u4e1c\u897f\uff0c\u53ef\u80fd\u957f\u8fd9\u6837\u2014\u2014\n\n';
+    scene += parts.join('\n\n');
+    scene += '\n\n\u4e5f\u8bb8\u4e0d\u5168\u5bf9\uff0c\u4f46\u603b\u6709\u90a3\u4e48\u4e00\u4e24\u53e5\u621e\u5230\u4e86\u3002';
+
+    var adviceText = '';
+    if (advices.length > 0) {
+      var count = Math.min(2, advices.length);
+      var indices = [];
+      for (var i = 0; i < advices.length; i++) indices.push(i);
+      for (var i = indices.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = indices[i]; indices[i] = indices[j]; indices[j] = tmp;
+      }
+      var selected = [];
+      for (var i = 0; i < count; i++) selected.push(advices[indices[i]]);
+      adviceText = selected.join(' \u53e6\u5916\uff0c');
+    } else {
+      adviceText = '\u82b15\u5206\u949f\uff0c\u4e0d\u770b\u624b\u673a\uff0c\u5c31\u5750\u7740\u60f3\u4e00\u4ef6\u4e8b\uff1a\u4e0a\u6b21\u4f60\u89c9\u5f97\u201c\u6d3b\u7740\u771f\u6709\u610f\u601d\u201d\u662f\u4ec0\u4e48\u65f6\u5019\uff1f\u5728\u505a\u4ec0\u4e48\uff1f';
+    }
+
+    return '\u3010\u4f60\u7684\u4fe1\u53f7\u706f\u4eae\u4e86\u3011\n' + scene + '\n\n\u3010\u8981\u4e0d\u8981\u8bd5\u8bd5\u3011\n' + adviceText + '\n\n\u3010\u6216\u8005\u5b8c\u5168\u4e0d\u662f\u3011\n\u8981\u662f\u770b\u5b8c\u89c9\u5f97\u201c\u5b8c\u5168\u4e0d\u662f\u6211\u201d\uff0c\u90a3\u4e5f\u6b63\u5e38\u2014\u2014\u8bf4\u660e\u8fd9\u4e2a\u65b9\u5411\u53ea\u662f\u8def\u8fc7\u4f60\u7684\u8111\u5b50\uff0c\u653e\u6389\u5b83\u4e0d\u53ef\u60dc\u3002\u4e5f\u8bb8\u4f60\u9700\u8981\u7684\u662f\u5b8c\u5168\u4e0d\u540c\u7684\u65b9\u5411\uff0c\u90a3\u5c31\u76f8\u4fe1\u81ea\u5df1\u7684\u76f4\u89c9\u3002';
+  } catch(e) {
+    console.error('assemblePremiumBackup error:', e);
+    return generateFallbackGuess(profile);
+  }
+}
+
+// ====== 深度解读 ======
+var deepAnalysisInProgress = false;
+
+async function deepAnalysis() {
+  if (deepAnalysisInProgress) return;
+  if (!lastProfile) return;
+
+  if (getCredits() < 3) {
+    alert('\u79ef\u5206\u4e0d\u8db3\uff0c\u8fd4\u56de\u9996\u9875\u770b\u5e7f\u544a\u6512\u79ef\u5206');
+    return;
+  }
+
+  deepAnalysisInProgress = true;
+  var btn = document.getElementById('deep-analysis-btn');
+  if (btn) { btn.disabled = true; }
+
+  setCredits(getCredits() - 3);
+
+  showScreen('loading-screen');
+  document.getElementById('loading-subtext').textContent = '\u6b63\u5728\u6df1\u5ea6\u89e3\u8bfb...';
+
+  try {
+    var result = await callDeepSeek(lastProfile);
+    showResult(lastProfile, result, null, 'deep_ai');
+  } catch (err) {
+    console.error('deepAnalysis error:', err);
+    var backupContent = assemblePremiumBackup(lastProfile);
+    showResult(lastProfile, backupContent, null, 'deep_backup');
+  } finally {
+    deepAnalysisInProgress = false;
+  }
+}
+
+// ====== 重试深度解读 ======
+async function retryDeepAnalysis() {
+  if (deepAnalysisInProgress) return;
+  if (!lastProfile) return;
+
+  deepAnalysisInProgress = true;
+  showScreen('loading-screen');
+  document.getElementById('loading-subtext').textContent = '\u6b63\u5728\u6df1\u5ea6\u89e3\u8bfb...';
+
+  try {
+    var result = await callDeepSeek(lastProfile);
+    showResult(lastProfile, result, null, 'deep_ai');
+  } catch (err) {
+    console.error('retryDeepAnalysis error:', err);
+    var backupContent = assemblePremiumBackup(lastProfile);
+    showResult(lastProfile, backupContent, null, 'deep_backup');
+  } finally {
+    deepAnalysisInProgress = false;
+  }
 }
 
 // ====== 初始化 ======
