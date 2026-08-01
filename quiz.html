@@ -697,20 +697,20 @@
       <div class="tier-card" onclick="selectTier('free')">
         <div class="tier-card-name">免费试穿</div>
         <div class="tier-card-subtitle">5题快速体验</div>
-        <div class="tier-card-meta">看1次广告解锁结果</div>
+        <div class="tier-card-meta">看1次广告解锁答案</div>
         <div class="tier-card-status">免费开始</div>
       </div>
       <div class="tier-card" onclick="selectTier('tier2')">
         <div class="tier-card-name">深入试试</div>
         <div class="tier-card-subtitle">15题随机抽取</div>
-        <div class="tier-card-meta">看2次广告</div>
-        <div class="tier-card-status">看广告开始</div>
+        <div class="tier-card-meta">累计1次广告解锁</div>
+        <div class="tier-card-status">看广告解锁</div>
       </div>
       <div class="tier-card" onclick="selectTier('tier3')">
         <div class="tier-card-name">认真试穿</div>
         <div class="tier-card-subtitle">30题深度探索</div>
-        <div class="tier-card-meta">看3次广告</div>
-        <div class="tier-card-status">看广告开始</div>
+        <div class="tier-card-meta">累计2次广告解锁</div>
+        <div class="tier-card-status">看广告解锁</div>
       </div>
       <div class="tier-card" id="tier-card-bigtest" onclick="selectTier('bigtest')">
         <div class="tier-card-name">大测试</div>
@@ -1191,10 +1191,10 @@ const dimensions = [
 
 // ====== 档位配置 ======
 const TIERS = {
-  free:    { name: '免费试穿', questionCount: 5,  adsToUnlockQuestions: 0, adsToUnlockAnswer: 1, consumeCredits: 0 },
-  tier2:   { name: '深入试试', questionCount: 15, adsToUnlockQuestions: 1, adsToUnlockAnswer: 1, consumeCredits: 0 },
-  tier3:   { name: '认真试穿', questionCount: 30, adsToUnlockQuestions: 2, adsToUnlockAnswer: 1, consumeCredits: 0 },
-  bigtest: { name: '大测试',   questionCount: 60, adsToUnlockQuestions: 0, adsToUnlockAnswer: 1, consumeCredits: 3 }
+  free:    { name: '免费试穿', questionCount: 5,  totalAdsToUnlock: 0, adsToUnlockAnswer: 1, consumeCredits: 0 },
+  tier2:   { name: '深入试试', questionCount: 15, totalAdsToUnlock: 1, adsToUnlockAnswer: 1, consumeCredits: 0 },
+  tier3:   { name: '认真试穿', questionCount: 30, totalAdsToUnlock: 2, adsToUnlockAnswer: 1, consumeCredits: 0 },
+  bigtest: { name: '大测试',   questionCount: 60, totalAdsToUnlock: 0, adsToUnlockAnswer: 1, consumeCredits: 3 }
 };
 
 // ====== 状态变量 ======
@@ -1203,7 +1203,7 @@ let activeQuestions = [];
 let currentQuestion = 0;
 let answers = [];
 let scores = {};
-let gatePurpose = null;       // 'unlock_questions' | 'unlock_answer' | 'earn_credits'
+let gatePurpose = null;       // 'unlock_tier' | 'unlock_answer' | 'earn_credits'
 let adsWatchedInGate = 0;
 let adsNeededInGate = 0;
 let lastProfile = null;
@@ -1217,6 +1217,16 @@ function initScores() {
 function getCredits() {
   try { return parseInt(localStorage.getItem('quiz_ad_credits') || '0'); }
   catch(e) { return 0; }
+}
+
+function getTotalAds() {
+  try { return parseInt(localStorage.getItem('quiz_total_ads') || '0'); }
+  catch(e) { return 0; }
+}
+
+function incrementTotalAds() {
+  var n = getTotalAds() + 1;
+  try { localStorage.setItem('quiz_total_ads', n); } catch(e) {}
 }
 
 function setCredits(n) {
@@ -1247,6 +1257,28 @@ function updateCreditsDisplay() {
       statusEl.textContent = '需要3积分（当前' + credits + '）';
     }
   }
+
+  // Update tier lock/unlock based on total ads
+  var totalAds = getTotalAds();
+  var tierKeys = ['free', 'tier2', 'tier3'];
+  var tierCards = document.querySelectorAll('.tier-card');
+  tierKeys.forEach(function(key, idx) {
+    var card = tierCards[idx];
+    if (!card) return;
+    var threshold = TIERS[key].totalAdsToUnlock;
+    var statusEl2 = card.querySelector('.tier-card-status');
+    if (totalAds >= threshold) {
+      card.classList.remove('locked');
+      if (key === 'free') {
+        if (statusEl2) statusEl2.textContent = '免费开始';
+      } else {
+        if (statusEl2) statusEl2.textContent = '已解锁';
+      }
+    } else {
+      card.classList.add('locked');
+      if (statusEl2) statusEl2.textContent = '看广告解锁（' + totalAds + '/' + threshold + '）';
+    }
+  });
 }
 
 // ====== 广告模拟 ======
@@ -1266,6 +1298,7 @@ function showAdOverlay() {
         clearInterval(interval);
         overlay.style.display = 'none';
         addCredit();
+        incrementTotalAds();
         resolve();
       }
     }, 1000);
@@ -1315,16 +1348,14 @@ function selectTier(tierKey) {
     return;
   }
 
-  // 需要看广告解锁题目
-  if (tier.adsToUnlockQuestions > 0) {
-    gatePurpose = 'unlock_questions';
-    adsWatchedInGate = 0;
-    adsNeededInGate = tier.adsToUnlockQuestions;
+  // 检查总广告次数是否达到解锁门槛
+  if (getTotalAds() < tier.totalAdsToUnlock) {
+    gatePurpose = 'unlock_tier';
     showGateScreen();
     return;
   }
 
-  // 免费：直接开始
+  // 已解锁，直接开始
   startQuizWithTier();
 }
 
@@ -1347,20 +1378,16 @@ function showGateScreen() {
     btn.textContent = '📺 看广告攒积分';
     document.getElementById('gate-progress').textContent = '每看1次广告 +1 积分';
 
-  } else if (gatePurpose === 'unlock_questions') {
+  } else if (gatePurpose === 'unlock_tier') {
     const remaining = adsNeededInGate - adsWatchedInGate;
 
     document.getElementById('gate-icon').textContent = '🔒';
     document.getElementById('gate-title').textContent = '看广告解锁题目';
     document.getElementById('gate-desc').innerHTML =
-      TIERS[currentTier].name + '需要看 <strong>' + adsNeededInGate + '</strong> 次广告解锁题目<br>' +
-      '已看：<strong style="color:#9c6ade;">' + adsWatchedInGate + '</strong>　还需：<strong style="color:#e87da6;">' + remaining + '</strong>';
-    btn.textContent = '📺 看广告解锁';
-    var dots = '';
-    for (var i = 0; i < adsNeededInGate; i++) {
-      dots += (i < adsWatchedInGate) ? '●' : '○';
-    }
-    document.getElementById('gate-progress').textContent = dots + '  ' + adsWatchedInGate + '/' + adsNeededInGate;
+      TIERS[currentTier].name + '需要累计看 <strong>' + TIERS[currentTier].totalAdsToUnlock + '</strong> 次广告解锁<br>' +
+      '累计看过：<strong style="color:#9c6ade;">' + getTotalAds() + '</strong>　还需：<strong style="color:#e87da6;">' + remaining + '</strong>';
+    btn.textContent = '📺 看广告 (+1累计次数)';
+    document.getElementById('gate-progress').textContent = '累计 ' + getTotalAds() + '/' + TIERS[currentTier].totalAdsToUnlock + ' 次广告';
 
   } else if (gatePurpose === 'unlock_answer') {
     document.getElementById('gate-icon').textContent = '🎁';
@@ -1389,9 +1416,8 @@ async function gateBtnClick() {
     } else {
       showGateScreen();
     }
-  } else if (gatePurpose === 'unlock_questions') {
-    adsWatchedInGate++;
-    if (adsWatchedInGate >= adsNeededInGate) {
+  } else if (gatePurpose === 'unlock_tier') {
+    if (getTotalAds() >= TIERS[currentTier].totalAdsToUnlock) {
       startQuizWithTier();
     } else {
       showGateScreen();
